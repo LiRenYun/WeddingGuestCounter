@@ -228,3 +228,102 @@ document.addEventListener('click', function(e) {
         });
     }
 });
+// ================= 報名表單 分步切換邏輯 =================
+const rsvpStep1 = document.getElementById('rsvp-step-1');
+const rsvpStep2 = document.getElementById('rsvp-step-2');
+const btnNextStep = document.getElementById('btn-next-step');
+const btnPrevStep = document.getElementById('btn-prev-step');
+
+// 點擊「下一步」
+btnNextStep.addEventListener('click', () => {
+    // 檢查是否有選擇男方或女方
+    const sideSelected = document.querySelector('input[name="side"]:checked');
+    if (!sideSelected) {
+        alert('請先選擇您是哪一方的親友喔！');
+        return;
+    }
+    // 隱藏第一步，顯示第二步
+    rsvpStep1.classList.add('hidden');
+    rsvpStep2.classList.remove('hidden');
+});
+
+// 點擊「上一步」
+btnPrevStep.addEventListener('click', () => {
+    rsvpStep2.classList.add('hidden');
+    rsvpStep1.classList.remove('hidden');
+});
+
+
+// ================= 表單送出 & API 串接邏輯 =================
+const rsvpForm = document.getElementById('form-rsvp');
+const successModal = document.getElementById('success-modal');
+const btnSuccessOk = document.getElementById('btn-success-ok');
+
+// 請將引號內的網址換成你的 Google Apps Script URL
+const API_URL = "https://script.google.com/macros/s/AKfycbzKsZ90yBKYSlTADzaVt6PLin9tevzgnTaskNF06jNWr6G63vX8k_GEu64gx275eTrumA/exec";
+
+if (rsvpForm) {
+    rsvpForm.addEventListener('submit', function (e) {
+        e.preventDefault(); // 防止網頁重新整理
+
+        // 將按鈕改為傳送中狀態，避免重複點擊
+        const submitBtn = rsvpForm.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn.innerText;
+        submitBtn.innerText = "傳送中... ⏳";
+        submitBtn.disabled = true;
+
+        // 收集表單資料
+        const payload = {
+            formType: "rsvp",
+            name: document.getElementById('rsvp-name').value,
+            side: document.querySelector('input[name="side"]:checked').value,
+            pax: document.getElementById('rsvp-pax').value,
+            diet: document.querySelector('input[name="diet"]:checked').value,
+            childSeat: document.getElementById('rsvp-child').value,
+            message: document.getElementById('rsvp-message').value || "無"
+        };
+
+        // 發送資料至 Google Excel
+        fetch(API_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            redirect: "follow", // 👉 新增這行：允許跟隨 Google 的 302 跳轉
+            headers: {
+                'Content-Type': 'text/plain;charset=utf-8', // 👉 確保編碼正確
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(() => {
+            // 傳送成功：顯示自訂的成功視窗
+            successModal.classList.remove('hidden');
+            rsvpForm.reset(); // 清空表單內容
+            
+            // 重置表單狀態回第一步
+            rsvpStep2.classList.add('hidden');
+            rsvpStep1.classList.remove('hidden');
+        })
+        .catch(err => {
+            console.error("API 錯誤:", err);
+            alert("❌ 傳送失敗，請稍後再試。");
+        })
+        .finally(() => {
+            // 恢復按鈕狀態
+            submitBtn.innerText = originalBtnText;
+            submitBtn.disabled = false;
+        });
+    });
+}
+
+// 點擊祝賀視窗的「確認並回首頁」
+if (btnSuccessOk) {
+    btnSuccessOk.addEventListener('click', () => {
+        // 隱藏成功視窗
+        successModal.classList.add('hidden');
+        
+        // 隱藏所有 section，並顯示首頁
+        document.querySelectorAll('.view-section').forEach(section => {
+            section.classList.add('hidden');
+        });
+        document.getElementById('sec-home').classList.remove('hidden');
+    });
+}

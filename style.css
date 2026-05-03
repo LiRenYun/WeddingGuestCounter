@@ -1,0 +1,347 @@
+/* ================= CSS 變數：婚禮色系 ================= */
+:root {
+    --bg-color: #ffd6e0;        /* 背景粉色 */
+    --box-bg: #ffffff;          /* 對話框底色 */
+    --text-color: #4a4a4a;      /* 深灰色文字 */
+    --border-color: #2b2b2b;    /* 像素邊框顏色 */
+    
+    /* 按鈕色系 */
+    --btn-primary: #ff9fb2;     /* 報名按鈕 - 珊瑚粉 */
+    --btn-secondary: #8ce1d5;   /* 資訊按鈕 - 蒂芬妮綠 */
+    --btn-accent: #bda4ff;      /* 祝福按鈕 - 薰衣草紫 */
+}
+
+/* ================= 基礎設定 ================= */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'DotGothic16', sans-serif;
+}
+
+body {
+    background-color: var(--bg-color);
+    background-image: radial-gradient(#ffb6c1 20%, transparent 20%);
+    background-size: 20px 20px;
+    color: var(--text-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px; /* 預留四周空間 */
+    overflow-x: hidden;
+}
+
+/* 隱藏區塊用 */
+.hidden {
+    display: none !important;
+}
+
+/* ================= 語系切換區 ================= */
+.lang-toggle-wrapper {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 10;
+}
+
+/* ================= RPG 遊戲對話框 (主容器) ================= */
+.game-box {
+    background-color: var(--box-bg);
+    width: 100%;
+    max-width: 540px; /* RWD: 電腦平板稍微放寬，看起來更大氣 */
+    padding: 40px 30px;
+    position: relative;
+    
+    /* 像素風厚實邊框 */
+    border: 4px solid var(--border-color);
+    box-shadow: 
+        8px 8px 0px rgba(0, 0, 0, 0.1),
+        inset 4px 4px 0px rgba(255, 255, 255, 0.8), 
+        inset -4px -4px 0px rgba(0, 0, 0, 0.1);
+}
+
+.title {
+    font-size: 2rem;
+    text-align: center;
+    margin-bottom: 8px;
+    color: #ff6b81;
+}
+
+.subtitle {
+    text-align: center;
+    font-size: 1.1rem;
+    margin-bottom: 35px;
+    color: #888;
+}
+
+section h2 {
+    text-align: center;
+    margin-bottom: 25px;
+    border-bottom: 4px dashed var(--border-color);
+    padding-bottom: 10px;
+    font-size: 1.5rem;
+}
+
+/* ================= 像素風按鈕 ================= */
+.menu-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.pixel-btn {
+    display: block;
+    width: 100%;
+    padding: 16px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: var(--border-color);
+    background-color: #fff;
+    border: 4px solid var(--border-color);
+    cursor: pointer;
+    text-align: center;
+    transition: transform 0.1s, box-shadow 0.1s;
+    
+    /* 實體按鍵感陰影 */
+    box-shadow: 4px 4px 0px var(--border-color);
+}
+
+/* 按鈕點擊動畫 */
+.pixel-btn:active {
+    transform: translate(4px, 4px);
+    box-shadow: 0px 0px 0px var(--border-color);
+}
+
+.pixel-btn.primary { background-color: var(--btn-primary); }
+.pixel-btn.secondary { background-color: var(--btn-secondary); }
+.pixel-btn.accent { background-color: var(--btn-accent); }
+
+.pixel-btn.sm {
+    width: auto;
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    border-width: 3px;
+    box-shadow: 3px 3px 0px var(--border-color);
+}
+.pixel-btn.sm:active {
+    transform: translate(3px, 3px);
+    box-shadow: 0px 0px 0px var(--border-color);
+}
+
+/* ================= 表單樣式 ================= */
+.pixel-form .form-group {
+    margin-bottom: 18px;
+}
+
+.pixel-form label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.pixel-input {
+    width: 100%;
+    padding: 12px;
+    font-size: 1rem;
+    border: 4px solid var(--border-color);
+    background-color: #f9f9f9;
+    outline: none;
+    transition: background-color 0.2s;
+}
+
+.pixel-input:focus {
+    background-color: #fffbdd;
+}
+
+/* RWD: 使用 Flex wrap 讓單選框在空間不足時自動換行 */
+.radio-group {
+    display: flex;
+    flex-wrap: wrap; 
+    gap: 15px;
+    padding: 5px 0;
+}
+
+.radio-group label {
+    font-weight: normal;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.form-actions {
+    display: flex;
+    flex-wrap: wrap; /* RWD: 按鈕在極小螢幕會換行 */
+    gap: 10px;
+    margin-top: 30px;
+}
+.form-actions .pixel-btn.sm {
+    flex: 1; /* 讓返回按鈕佔一定比例 */
+    min-width: 80px;
+}
+.form-actions .pixel-btn:not(.sm) {
+    flex: 2; /* 讓主送出按鈕稍微寬一點 */
+}
+
+/* ================= 資訊區塊 ================= */
+.info-content p {
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+    line-height: 1.5;
+}
+
+.pixel-box {
+    background-color: #f0f0f0;
+    border: 4px solid var(--border-color);
+    padding: 15px;
+    margin-top: 20px;
+}
+
+.pixel-box h3 {
+    font-size: 1.2rem;
+    margin-bottom: 8px;
+}
+
+.pixel-box ul {
+    list-style-type: none;
+    margin-left: 5px;
+}
+
+.pixel-box li {
+    margin-bottom: 8px;
+    font-size: 1rem;
+    line-height: 1.4;
+}
+
+/* ================= RWD 媒體查詢 (針對手機螢幕) ================= */
+@media screen and (max-width: 480px) {
+    body {
+        padding: 10px; /* 手機版縮小外部留白 */
+    }
+
+    .lang-toggle-wrapper {
+        top: 10px;
+        right: 10px;
+    }
+
+    .game-box {
+        padding: 25px 15px; /* 手機版縮小對話框內部留白 */
+        border-width: 3px;  /* 稍微把邊框變細，節省空間 */
+    }
+
+    /* 字體微調，避免在小螢幕被切掉或擠壓 */
+    .title {
+        font-size: 1.6rem; 
+    }
+    
+    .subtitle {
+        font-size: 0.95rem;
+        margin-bottom: 25px;
+    }
+
+    section h2 {
+        font-size: 1.3rem;
+        margin-bottom: 15px;
+    }
+
+    .pixel-btn {
+        padding: 12px;
+        font-size: 1.1rem;
+    }
+
+    .pixel-input {
+        padding: 10px;
+        border-width: 3px; /* 手機上輸入框的邊框也稍微變細 */
+    }
+
+    .pixel-form label {
+        font-size: 1rem;
+    }
+
+    /* 將選項改為上下排列，方便手指點擊 */
+    .radio-group {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .info-content p {
+        font-size: 1rem;
+    }
+}
+/* ================= 圖片放大 Modal 樣式 ================= */
+
+/* 原本的圖片加上放大鼠標 */
+#parking-map-img {
+    cursor: zoom-in;
+    transition: transform 0.1s;
+}
+#parking-map-img:active {
+    transform: scale(0.98); /* 點擊時有按壓感 */
+}
+
+/* 黑色半透明背景 */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000; /* 確保它蓋在最上層 */
+}
+
+/* 彈出視窗的圖片容器 */
+.modal-content {
+    position: relative;
+    max-width: 90vw;
+    max-height: 90vh;
+    background-color: var(--box-bg);
+    border: 4px solid var(--border-color);
+    padding: 10px;
+    box-shadow: 8px 8px 0px rgba(0, 0, 0, 0.5);
+    animation: popUp 0.3s ease-out; /* 彈出動畫 */
+}
+
+/* 裡面的大圖 */
+.modal-content img {
+    width: 100%;
+    height: auto;
+    max-height: calc(90vh - 20px);
+    display: block;
+}
+
+/* 像素風關閉按鈕 */
+.modal-close {
+    position: absolute;
+    top: -20px;
+    right: -20px;
+    background-color: var(--btn-primary);
+    color: #fff;
+    border: 4px solid var(--border-color);
+    width: 40px;
+    height: 40px;
+    font-size: 1.2rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    box-shadow: 4px 4px 0px var(--border-color);
+    z-index: 1001;
+}
+
+.modal-close:active {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px var(--border-color);
+}
+
+/* 彈出動畫 */
+@keyframes popUp {
+    0% { transform: scale(0.8); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}

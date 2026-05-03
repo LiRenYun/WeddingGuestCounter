@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Wedding 2026</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div id="heart-container"></div>
+
+    <div class="lang-toggle-wrapper">
+        <button id="btn-lang" class="pixel-btn sm">切換語言 / 言語切替</button>
+    </div>
+
+    <main class="game-box">
+
+        <section id="sec-home" class="view-section">
+            <h1 class="title" data-i18n="title">💍 我們的婚禮 💍</h1>
+            <p class="subtitle" data-i18n="subtitle">2026.11.29 歡迎來到新手村</p>
+
+            <div class="menu-buttons">
+                <button class="pixel-btn primary nav-btn" data-target="sec-rsvp" data-i18n="btn_rsvp">📝 報名參加</button>
+                <button class="pixel-btn secondary nav-btn" data-target="sec-info" data-i18n="btn_info">🗺️
+                    婚宴資訊</button>
+                <button class="pixel-btn accent nav-btn" data-target="sec-wishes" data-i18n="btn_wishes">💌
+                    想對新人說的話</button>
+            </div>
+        </section>
+
+        <section id="sec-rsvp" class="view-section hidden">
+            <h2 data-i18n="title_rsvp">📝 報名參加</h2>
+            <form id="form-rsvp" class="pixel-form">
+                <div class="form-group">
+                    <label data-i18n="label_side">您是哪一方的親友？</label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="side" value="男方親友" required> <span
+                                data-i18n="side_groom">男方</span></label>
+                        <label><input type="radio" name="side" value="女方親友"> <span
+                                data-i18n="side_bride">女方</span></label>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="pixel-btn sm nav-btn" data-target="sec-home"
+                        data-i18n="btn_back">返回</button>
+                    <button type="submit" class="pixel-btn primary" data-i18n="btn_submit">送出表單</button>
+                </div>
+            </form>
+        </section>
+
+        <section id="sec-info" class="view-section hidden">
+            <h2 data-i18n="title_info">🗺️ 婚宴資訊</h2>
+            <div class="info-content">
+                <p><strong data-i18n="info_date_label">📅 日期:</strong> <span data-i18n="info_date">2026/11/29 (日)</span>
+                </p>
+                <p><strong data-i18n="info_time_label">⏰ 時間:</strong> <span data-i18n="info_time">11:00 AM 進場</span></p>
+                <p><strong data-i18n="info_venue_label">📍 地點:</strong> <span data-i18n="info_venue">玄饌海鮮宴會館</span></p>
+                <p style="margin-top: 10px;">
+                    <a href="https://maps.app.goo.gl/qjqtVKAnW3CYJFKL6" target="_blank" class="pixel-btn sm"
+                        data-i18n="info_map_link" style="text-decoration: none; display: inline-block;">📍 開啟 Google
+                        Maps</a>
+                </p>
+
+                <div class="pixel-box">
+                    <h3 data-i18n="info_transport">🚗 交通方式</h3>
+                    <ul>
+                        <li data-i18n="info_hsr">🚄 高鐵：台南站下車，轉計程車約20-30分</li>
+                        <li data-i18n="info_tra">🚆 台鐵：台南火車站，轉計程車約15分</li>
+                    </ul>
+                </div>
+
+                <div class="pixel-box">
+                    <h3 data-i18n="info_parking">🅿️ 停車場配置圖</h3>
+                    <img id="parking-map-img" src="./TrafficInfo.png" alt="Parking Map"
+                        style="width: 100%; border: 4px solid var(--border-color); margin-top: 10px;">
+                    <!-- <img src="./TrafficInfo.png" alt="Parking Map" style="width: 100%; border: 4px solid var(--border-color); margin-top: 10px;"> -->
+                </div>
+            </div>
+            <div class="form-actions" style="margin-top: 20px;">
+                <button type="button" class="pixel-btn sm nav-btn" data-target="sec-home"
+                    data-i18n="btn_back">返回</button>
+            </div>
+        </section>
+
+        <section id="sec-wishes" class="view-section hidden">
+            <h2 data-i18n="title_wishes">💌 留言祝福</h2>
+            <form id="form-wish" class="pixel-form">
+                <div class="form-actions">
+                    <button type="button" class="pixel-btn sm nav-btn" data-target="sec-home"
+                        data-i18n="btn_back">返回</button>
+                    <button type="submit" class="pixel-btn accent" data-i18n="btn_submit">送出祝福</button>
+                </div>
+            </form>
+        </section>
+
+    </main>
+    <div id="image-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div id="close-modal" class="modal-close">X</div>
+            <img id="enlarged-img" src="" alt="Enlarged Map">
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+
+</html>

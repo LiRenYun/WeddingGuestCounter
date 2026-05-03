@@ -112,3 +112,119 @@ if (mapImg && imageModal) {
         }
     });
 }
+// ================= 5. 自訂像素拉炮點擊動畫邏輯 =================
+document.addEventListener('click', function(e) {
+    // 取得點擊位置坐标 (相對於視窗)
+    const x = e.clientX;
+    const y = e.clientY;
+
+    // 建立一個 Confetti 容器 (如果還沒建立的話)
+    let container = document.querySelector('.confetti-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.className = 'confetti-container';
+        document.body.appendChild(container);
+    }
+
+    // 動態產生 12 個隨機的像素 Confetti 粒子
+    const particleCount = 12;
+    const colors = ['#ff9fb2', '#8ce1d5', '#bda4ff', '#fffd80', '#ffffff']; // 婚禮色系
+
+    for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'pixel-confetti';
+        
+        // 隨機顏色
+        particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        
+        // 隨機散開方向 (dx, dy) and 隨機旋轉角度 (dr)
+        const angle = Math.random() * Math.PI * 2;
+        const radius = Math.random() * 100 + 50; // 散開半徑 50px~150px
+        const dx = Math.cos(angle) * radius;
+        const dy = Math.sin(angle) * radius;
+        const dr = (Math.random() - 0.5) * 360; // 旋轉度數
+
+        // 將變數傳給 CSS keyframes
+        particle.style.setProperty('--dx', `${dx}px`);
+        particle.style.setProperty('--dy', `${dy}px`);
+        particle.style.setProperty('--dr', `${dr}deg`);
+        
+        // 設定初始位置為點擊位置
+        particle.style.left = `${x}px`;
+        particle.style.top = `${y}px`;
+
+        // 隨機動畫延時，更有層次感
+        particle.style.animationDelay = `${Math.random() * 0.1}s`;
+
+        // 將粒子加入容器
+        container.appendChild(particle);
+
+        // 動畫結束後從 DOM 移除粒子 (重要，避免網頁變慢)
+        particle.addEventListener('animationend', function() {
+            particle.remove();
+        });
+    }
+});
+// ================= 5. 自訂像素拉炮點擊動畫邏輯 (已更新) =================
+document.addEventListener('click', function(e) {
+    // 取得點擊位置坐标 (相對於視窗)
+    const x = e.clientX;
+    const y = e.clientY;
+
+    // 建立一個 Confetti 容器 (如果還沒建立的話)
+    let container = document.querySelector('.confetti-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.className = 'confetti-container';
+        document.body.appendChild(container);
+    }
+
+    // 動態產生粒子，包含原有的像素 Confetti 和新增的像素花瓣
+    const particleCount = 18; // 增加粒子數量，更有層次感 (原 12)
+    const colorsConfetti = ['#ff9fb2', '#8ce1d5', '#bda4ff', '#fffd80', '#ffffff']; // 原有 bold 彩色
+    const colorsPetal = ['#ffdae0', '#dbffff', '#e6daff', '#ffffee', '#ffffff']; // 新增 粉嫩柔和花瓣色
+
+    for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement('div');
+        
+        // 隨機決定是 Confetti (0) 還是 花瓣 (1)
+        const particleType = Math.floor(Math.random() * 2);
+        
+        if (particleType === 0) {
+            particle.className = 'pixel-confetti';
+            // 使用大膽彩色
+            particle.style.backgroundColor = colorsConfetti[Math.floor(Math.random() * colorsConfetti.length)];
+        } else {
+            particle.className = 'pixel-petal';
+            // 使用柔和粉嫩色
+            particle.style.backgroundColor = colorsPetal[Math.floor(Math.random() * colorsPetal.length)];
+        }
+        
+        // --- 相同的隨機散開與旋轉邏輯 ---
+        const angle = Math.random() * Math.PI * 2;
+        const radius = Math.random() * 120 + 60; // 稍微擴大散開半徑 (原 50-150 -> 60-180)
+        const dx = Math.cos(angle) * radius;
+        const dy = Math.sin(angle) * radius;
+        const dr = (Math.random() - 0.5) * 360; // 旋轉度數
+
+        // 將變數傳給 CSS keyframes
+        particle.style.setProperty('--dx', `${dx}px`);
+        particle.style.setProperty('--dy', `${dy}px`);
+        particle.style.setProperty('--dr', `${dr}deg`);
+        
+        // 設定初始位置為點擊位置
+        particle.style.left = `${x}px`;
+        particle.style.top = `${y}px`;
+
+        // 隨機動畫延時，更有層次感
+        particle.style.animationDelay = `${Math.random() * 0.1}s`;
+
+        // 將粒子加入容器
+        container.appendChild(particle);
+
+        // 動畫結束後從 DOM 移除粒子
+        particle.addEventListener('animationend', function() {
+            particle.remove();
+        });
+    }
+});

@@ -345,3 +345,63 @@ section h2 {
     0% { transform: scale(0.8); opacity: 0; }
     100% { transform: scale(1); opacity: 1; }
 }
+/* ================= 5. 自訂像素滑鼠游標 & 拉炮動畫 (已更新) ================= */
+
+/* 1. 修改滑鼠游標 (使用左右顛倒的 SVG Emoji 拉炮) */
+body {
+    /* 用 SVG 將 🎉 左右顛倒渲染，0 0 是點擊判定點(對準開口)，auto 是如果失敗就顯示正常游標 */
+    cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40' width='40' height='40' style='font-size:30px;'><g transform='translate(40, 0) scale(-1, 1)'><text x='0' y='30'>🎉</text></g></svg>") 0 0, auto;
+}
+
+/* 確保按鈕和輸入框也沿用左右顛倒的拉炮滑鼠 */
+button, input, select, label, .pixel-btn {
+    cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40' width='40' height='40' style='font-size:30px;'><g transform='translate(40, 0) scale(-1, 1)'><text x='0' y='30'>🎉</text></g></svg>") 0 0, pointer;
+}
+
+/* 2. 拉炮粒子樣式容器 (不變) */
+.confetti-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 9999;
+}
+
+/* 3. 個別 Confetti 粒子 (原有樣式) */
+.pixel-confetti {
+    position: absolute;
+    width: 8px; /* 像素大小 */
+    height: 8px;
+    border: 1px solid rgba(0,0,0,0.1); /* 極細像素邊框 */
+    animation: popperBurst 0.8s ease-out forwards;
+    box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.05); /* 輕微像素陰影 */
+}
+
+/* 4. [新增] 個別花瓣粒子樣式 */
+.pixel-petal {
+    position: absolute;
+    width: 8px; /* 寬度與 Confetti 相同 */
+    height: 11px; /* 稍微拉長，呈現花瓣感 */
+    border-radius: 50% 50% 20% 20%; /* 類心形/淚滴形像素花瓣 */
+    border: 1px solid rgba(0,0,0,0.05); /* 更輕的像素邊框 */
+    animation: popperBurst 0.8s ease-out forwards;
+    box-shadow: 1px 1px 0px rgba(0, 0, 0, 0.03); /* 更輕柔的像素陰影 */
+}
+
+/* ================= 6. 拉炮爆炸動畫 Keyframes (不變) ================= */
+@keyframes popperBurst {
+    0% {
+        transform: translate(-50%, -50%) scale(0) rotate(0deg);
+        opacity: 1;
+    }
+    10% {
+        transform: translate(-50%, -50%) scale(1.2) rotate(45deg);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy) + 50px)) scale(0.6) rotate(var(--dr));
+        opacity: 0;
+    }
+}

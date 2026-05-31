@@ -1,7 +1,7 @@
 // ================= 1. 多國語系字典 (i18n) =================
 const translations = {
     "zh": {
-        "title": "💍 我們的婚禮 💍",
+        "title": "💍 仁雲&銳芝💌我們的婚禮 💍",
         "subtitle": "2026.11.29 歡迎來到新手村",
         "btn_rsvp": "📝 報名參加",
         "btn_info": "🗺️ 婚宴資訊",
@@ -26,7 +26,7 @@ const translations = {
         "info_parking": "🅿️ 停車場配置圖"
     },
     "ja": {
-        "title": "💍 私たちの結婚式 💍",
+        "title": "💍仁雲&銳芝💌私たちの結婚式💍",
         "subtitle": "2026.11.29 始まりの村へようこそ",
         "btn_rsvp": "📝 出席の返信",
         "btn_info": "🗺️ 結婚式の案内",
@@ -87,6 +87,7 @@ navButtons.forEach(btn => {
         document.getElementById(targetId).classList.remove('hidden');
     });
 });
+
 // ================= 4. 圖片放大 (Lightbox) 邏輯 =================
 const mapImg = document.getElementById('parking-map-img');
 const imageModal = document.getElementById('image-modal');
@@ -112,60 +113,8 @@ if (mapImg && imageModal) {
         }
     });
 }
-// ================= 5. 自訂像素拉炮點擊動畫邏輯 =================
-document.addEventListener('click', function(e) {
-    // 取得點擊位置坐标 (相對於視窗)
-    const x = e.clientX;
-    const y = e.clientY;
 
-    // 建立一個 Confetti 容器 (如果還沒建立的話)
-    let container = document.querySelector('.confetti-container');
-    if (!container) {
-        container = document.createElement('div');
-        container.className = 'confetti-container';
-        document.body.appendChild(container);
-    }
-
-    // 動態產生 12 個隨機的像素 Confetti 粒子
-    const particleCount = 12;
-    const colors = ['#ff9fb2', '#8ce1d5', '#bda4ff', '#fffd80', '#ffffff']; // 婚禮色系
-
-    for (let i = 0; i < particleCount; i++) {
-        const particle = document.createElement('div');
-        particle.className = 'pixel-confetti';
-        
-        // 隨機顏色
-        particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-        
-        // 隨機散開方向 (dx, dy) and 隨機旋轉角度 (dr)
-        const angle = Math.random() * Math.PI * 2;
-        const radius = Math.random() * 100 + 50; // 散開半徑 50px~150px
-        const dx = Math.cos(angle) * radius;
-        const dy = Math.sin(angle) * radius;
-        const dr = (Math.random() - 0.5) * 360; // 旋轉度數
-
-        // 將變數傳給 CSS keyframes
-        particle.style.setProperty('--dx', `${dx}px`);
-        particle.style.setProperty('--dy', `${dy}px`);
-        particle.style.setProperty('--dr', `${dr}deg`);
-        
-        // 設定初始位置為點擊位置
-        particle.style.left = `${x}px`;
-        particle.style.top = `${y}px`;
-
-        // 隨機動畫延時，更有層次感
-        particle.style.animationDelay = `${Math.random() * 0.1}s`;
-
-        // 將粒子加入容器
-        container.appendChild(particle);
-
-        // 動畫結束後從 DOM 移除粒子 (重要，避免網頁變慢)
-        particle.addEventListener('animationend', function() {
-            particle.remove();
-        });
-    }
-});
-// ================= 5. 自訂像素拉炮點擊動畫邏輯 (已更新) =================
+// ================= 5. 自訂像素拉炮與花瓣點擊動畫邏輯 =================
 document.addEventListener('click', function(e) {
     // 取得點擊位置坐标 (相對於視窗)
     const x = e.clientX;
@@ -180,7 +129,7 @@ document.addEventListener('click', function(e) {
     }
 
     // 動態產生粒子，包含原有的像素 Confetti 和新增的像素花瓣
-    const particleCount = 18; // 增加粒子數量，更有層次感 (原 12)
+    const particleCount = 18; // 增加粒子數量，更有層次感
     const colorsConfetti = ['#ff9fb2', '#8ce1d5', '#bda4ff', '#fffd80', '#ffffff']; // 原有 bold 彩色
     const colorsPetal = ['#ffdae0', '#dbffff', '#e6daff', '#ffffee', '#ffffff']; // 新增 粉嫩柔和花瓣色
 
@@ -192,17 +141,15 @@ document.addEventListener('click', function(e) {
         
         if (particleType === 0) {
             particle.className = 'pixel-confetti';
-            // 使用大膽彩色
             particle.style.backgroundColor = colorsConfetti[Math.floor(Math.random() * colorsConfetti.length)];
         } else {
             particle.className = 'pixel-petal';
-            // 使用柔和粉嫩色
             particle.style.backgroundColor = colorsPetal[Math.floor(Math.random() * colorsPetal.length)];
         }
         
-        // --- 相同的隨機散開與旋轉邏輯 ---
+        // 散開與旋轉邏輯
         const angle = Math.random() * Math.PI * 2;
-        const radius = Math.random() * 120 + 60; // 稍微擴大散開半徑 (原 50-150 -> 60-180)
+        const radius = Math.random() * 120 + 60; // 稍微擴大散開半徑
         const dx = Math.cos(angle) * radius;
         const dy = Math.sin(angle) * radius;
         const dr = (Math.random() - 0.5) * 360; // 旋轉度數
@@ -228,11 +175,20 @@ document.addEventListener('click', function(e) {
         });
     }
 });
-// ================= 報名表單 分步切換邏輯 =================
+
+// ================= 6. 報名表單 分步與動態連動邏輯 =================
 const rsvpStep1 = document.getElementById('rsvp-step-1');
 const rsvpStep2 = document.getElementById('rsvp-step-2');
 const btnNextStep = document.getElementById('btn-next-step');
 const btnPrevStep = document.getElementById('btn-prev-step');
+
+// 取得人數與葷素相關 DOM
+const paxInput = document.getElementById('rsvp-pax');
+const dietSingle = document.getElementById('diet-single');
+const dietMultiple = document.getElementById('diet-multiple');
+const dietMeat = document.getElementById('diet-meat');
+const dietVeg = document.getElementById('diet-veg');
+const dietError = document.getElementById('diet-error');
 
 // 點擊「下一步」
 btnNextStep.addEventListener('click', () => {
@@ -253,18 +209,59 @@ btnPrevStep.addEventListener('click', () => {
     rsvpStep1.classList.remove('hidden');
 });
 
+// 監聽參與人數變化，動態切換葷素輸入介面
+if (paxInput) {
+    paxInput.addEventListener('input', () => {
+        const pax = parseInt(paxInput.value) || 1;
+        
+        if (pax > 1) {
+            dietSingle.classList.add('hidden');
+            dietMultiple.classList.remove('hidden');
+            dietMeat.value = pax;
+            dietVeg.value = 0;
+            dietError.classList.add('hidden');
+        } else {
+            dietSingle.classList.remove('hidden');
+            dietMultiple.classList.add('hidden');
+        }
+    });
+}
 
-// ================= 表單送出 & API 串接邏輯 =================
+// ================= 7. 表單送出 & API 串接邏輯 =================
 const rsvpForm = document.getElementById('form-rsvp');
 const successModal = document.getElementById('success-modal');
 const btnSuccessOk = document.getElementById('btn-success-ok');
 
-// 請將引號內的網址換成你的 Google Apps Script URL
+// Google Apps Script URL
 const API_URL = "https://script.google.com/macros/s/AKfycbzKsZ90yBKYSlTADzaVt6PLin9tevzgnTaskNF06jNWr6G63vX8k_GEu64gx275eTrumA/exec";
 
 if (rsvpForm) {
     rsvpForm.addEventListener('submit', function (e) {
         e.preventDefault(); // 防止網頁重新整理
+
+        // === 防呆驗證 (Defense) ===
+        const pax = parseInt(paxInput.value) || 1;
+        let finalDiet = "";
+
+        if (pax > 1) {
+            const meatCount = parseInt(dietMeat.value) || 0;
+            const vegCount = parseInt(dietVeg.value) || 0;
+            
+            // 檢查葷素總和是否等於總人數
+            if (meatCount + vegCount !== pax) {
+                dietError.classList.remove('hidden');
+                alert('⚠️ 葷食與素食人數總和，必須剛好等於參與總人數喔！');
+                return; // 終止執行，不送出表單
+            } else {
+                dietError.classList.add('hidden');
+            }
+            // 組合多人葷素字串格式
+            finalDiet = `葷食: ${meatCount}, 素食: ${vegCount}`;
+        } else {
+            // 單人模式直接抓單選按鈕的值
+            finalDiet = document.querySelector('input[name="diet"]:checked').value;
+        }
+        // ========================
 
         // 將按鈕改為傳送中狀態，避免重複點擊
         const submitBtn = rsvpForm.querySelector('button[type="submit"]');
@@ -277,9 +274,9 @@ if (rsvpForm) {
             formType: "rsvp",
             name: document.getElementById('rsvp-name').value,
             side: document.querySelector('input[name="side"]:checked').value,
-            pax: document.getElementById('rsvp-pax').value,
-            diet: document.querySelector('input[name="diet"]:checked').value,
-            childSeat: document.getElementById('rsvp-child').value,
+            pax: pax,
+            diet: finalDiet, // 使用剛剛判斷好的葷素資料
+            childSeat: document.getElementById('rsvp-child').value || 0,
             message: document.getElementById('rsvp-message').value || "無"
         };
 
@@ -287,9 +284,9 @@ if (rsvpForm) {
         fetch(API_URL, {
             method: 'POST',
             mode: 'no-cors',
-            redirect: "follow", // 👉 新增這行：允許跟隨 Google 的 302 跳轉
+            redirect: "follow",
             headers: {
-                'Content-Type': 'text/plain;charset=utf-8', // 👉 確保編碼正確
+                'Content-Type': 'text/plain;charset=utf-8',
             },
             body: JSON.stringify(payload)
         })
@@ -301,6 +298,10 @@ if (rsvpForm) {
             // 重置表單狀態回第一步
             rsvpStep2.classList.add('hidden');
             rsvpStep1.classList.remove('hidden');
+
+            // 觸發人數重置的 UI 連動
+            dietSingle.classList.remove('hidden');
+            dietMultiple.classList.add('hidden');
         })
         .catch(err => {
             console.error("API 錯誤:", err);

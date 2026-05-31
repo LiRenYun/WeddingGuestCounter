@@ -1,8 +1,8 @@
 /**
- * 💡 婚紗特集照片清單
- * 未來將照片放到專案資料夾後，將路徑填入下方陣列。
- * 例如: const weddingPhotos = ["img/p1.jpg", "img/p2.jpg"];
+ * 📷 婚紗特集照片清單 (預設雲端測試照片)
+ * 💡 清空下方陣列即可測試「🚧 功能開發中」提示。
  */
+
 const weddingPhotos = ["img/p1.jpg"]; 
 
 // ================= 1. 多國語系字典 =================
@@ -41,7 +41,7 @@ const translations = {
         "photos_coming_soon": "🚧 功能開發中，敬請期待！"
     },
     "ja": {
-        "title": "💍仁雲&銳芝💌私たちの結婚式💍",
+        "title": "💍 仁雲&銳芝💌私たちの結婚式 💍",
         "subtitle": "2026.11.29 始まりの村へようこそ",
         "btn_rsvp": "📝 出席の返信",
         "btn_info": "🗺️ 結婚式の案内",
@@ -75,7 +75,7 @@ const translations = {
     }
 };
 
-// ================= 2. 語系與頁面切換核心 =================
+// ================= 2. 語系與頁面切換核心逻辑 =================
 let currentLang = 'zh';
 
 function updateLanguage() {
@@ -97,83 +97,276 @@ if (langBtn) {
     });
 }
 
-// 導覽切換點擊事件 (確保切換目標存在才執行，防止報錯)
 document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         const targetId = btn.getAttribute('data-target');
         const targetSection = document.getElementById(targetId);
         
         if (targetSection) {
-            // 隱藏所有視窗
             document.querySelectorAll('.view-section').forEach(sec => sec.classList.add('hidden'));
-            // 顯示目標視窗
             targetSection.classList.remove('hidden');
             
-            // 如果進入的是婚紗特集頁面，觸發相簿檢查
             if (targetId === 'sec-photos') {
                 initWeddingPhotos();
             }
-        } else {
-            console.warn(`找不到目標頁面: #${targetId}，請檢查 HTML 中是否有對應的 id。`);
         }
     });
 });
 
-// ================= 3. 婚紗相簿判斷邏輯 (高安全版) =================
+// ================= 3. 婚紗相簿 - 浮動置中輪播與連動核心 =================
+let currentPhotoIndex = 0; 
+
+// 3a. 初始化相簿
 function initWeddingPhotos() {
+    const wrapper = document.getElementById('carousel-wrapper');
     const container = document.getElementById('photos-container');
     const emptyMsg = document.getElementById('photos-empty-msg');
     
-    // 如果 HTML 裡找不到對應的容器，就安靜地退出不報錯
-    if (!container || !emptyMsg) return;
+    if (!container || !emptyMsg || !wrapper) return;
 
     if (weddingPhotos.length === 0) {
-        container.classList.add('hidden');
-        emptyMsg.classList.remove('hidden');
-    } else {
-        emptyMsg.classList.add('hidden');
-        container.classList.remove('hidden');
+        wrapper.classList.add('hidden'); 
+        emptyMsg.classList.remove('hidden'); 
+        return;
+    }
+
+    emptyMsg.classList.add('hidden');
+    wrapper.classList.remove('hidden');
+    
+    if (container.children.length === 0) {
         container.innerHTML = '';
-        weddingPhotos.forEach(src => {
+        weddingPhotos.forEach((src, index) => {
             const img = document.createElement('img');
             img.src = src;
             img.className = 'photo-item';
+            img.alt = `Wedding Photo ${index + 1}`;
+            
+            // 🚀 【核心修復 1】：強制停用 HTML5 原生圖片拖動，防止網頁滑鼠卡死
+            img.setAttribute('draggable', 'false'); 
+            
             img.addEventListener('click', () => {
-                const modal = document.getElementById('image-modal');
-                const enlarged = document.getElementById('enlarged-img');
-                if (modal && enlarged) {
-                    enlarged.src = src;
-                    modal.classList.remove('hidden');
-                }
+                currentPhotoIndex = index;
+                updateCarouselPosition();
+                openLightbox(src);
             });
             container.appendChild(img);
         });
+        
+        addDragInteractionToCarousel();
     }
+    
+    updateCarouselPosition(0); 
 }
 
-// ================= 4. 其它功能安全防護 (Lightbox、打字特效、拉炮) =================
-// 圖片放大 Lightbox 邏輯
-const mapImg = document.getElementById('parking-map-img');
+// 3b. 動態將目前 index 的縮圖推移至中央並放大
+function updateCarouselPosition(customSpeed) {
+    const container = document.getElementById('photos-container');
+    const items = container.querySelectorAll('.photo-item');
+    const viewContainer = document.querySelector('.carousel-container');
+    
+    if (items.length === 0 || !viewContainer) return;
+
+    if (currentPhotoIndex < 0) currentPhotoIndex = 0;
+    if (currentPhotoIndex >= items.length) currentPhotoIndex = items.length - 1;
+
+    items.forEach((item, idx) => {
+        item.classList.remove('active');
+        if (idx === currentPhotoIndex) item.classList.add('active');
+    });
+
+    const activeItem = items[currentPhotoIndex];
+    const containerWidth = viewContainer.offsetWidth;
+    const trackOffset = (containerWidth / 2) - (activeItem.offsetLeft + activeItem.offsetWidth / 2);
+    
+    if (customSpeed !== undefined) {
+        container.style.transition = `transform ${customSpeed}s cubic-bezier(0.23, 1, 0.32, 1)`;
+    } else {
+        container.style.transition = 'transform 0.5s cubic-bezier(0.23, 1, 0.32, 1)'; 
+    }
+    container.style.transform = `translateX(${trackOffset}px)`;
+}
+
+// 3c. 縮圖軌道手勢拖拉切換算法
+function addDragInteractionToCarousel() {
+    const touchZone = document.getElementById('carousel-touch-zone');
+    if (!touchZone) return;
+
+    let isDragging = false;
+    let startX = 0;
+    let startOffset = 0;
+    let dragThreshold = 50; 
+
+    const getCurrentTranslate = (el) => {
+        const style = window.getComputedStyle(el);
+        const matrix = new WebKitCSSMatrix(style.transform);
+        return matrix.m41; 
+    }
+
+    const startDrag = (e) => {
+        const items = touchZone.querySelectorAll('.photo-item');
+        if (items.length <= 1) return; 
+
+        // 🚀 【核心修復 2】：阻止滑鼠點擊圖片時的預設「抓取」行為，使拖拉變絲滑
+        if (e.cancelable) e.preventDefault(); 
+
+        isDragging = true;
+        touchZone.style.cursor = 'grabbing'; 
+        
+        startX = e.clientX || e.touches[0].clientX;
+        startOffset = getCurrentTranslate(document.getElementById('photos-container'));
+        document.getElementById('photos-container').style.transition = 'none'; 
+    }
+
+    const moveDrag = (e) => {
+        if (!isDragging) return;
+        
+        const track = document.getElementById('photos-container');
+        const currentX = e.clientX || (e.touches && e.touches[0].clientX);
+        if (currentX === undefined) return;
+        
+        const diffX = currentX - startX;
+        const newTranslate = startOffset + diffX;
+        track.style.transform = `translateX(${newTranslate}px)`;
+    }
+
+    const endDrag = (e) => {
+        if (!isDragging) return;
+        isDragging = false;
+        touchZone.style.cursor = 'grab'; 
+
+        let currentX = startX;
+        if (e.clientX !== undefined) {
+            currentX = e.clientX;
+        } else if (e.changedTouches && e.changedTouches[0]) {
+            currentX = e.changedTouches[0].clientX;
+        }
+        
+        const diffX = currentX - startX;
+        const firstItem = document.querySelector('.photo-item');
+        const itemWidth = firstItem ? (firstItem.offsetWidth + 30) : 180; 
+        
+        if (Math.abs(diffX) > dragThreshold) {
+            let change = Math.round(diffX / itemWidth);
+            if (change === 0) change = diffX > 0 ? 1 : -1;
+            currentPhotoIndex -= change; 
+        }
+        
+        updateCarouselPosition(0.4); 
+    }
+
+    // 綁定電腦滑鼠
+    touchZone.addEventListener('mousedown', startDrag);
+    window.addEventListener('mousemove', moveDrag); // 🚀 綁定到 window 避免滑鼠滑出容器時漏偵測
+    window.addEventListener('mouseup', endDrag);
+
+    // 綁定手機觸控
+    touchZone.addEventListener('touchstart', startDrag);
+    touchZone.addEventListener('touchmove', moveDrag, { passive: true });
+    touchZone.addEventListener('touchend', endDrag);
+}
+
+// ================= 4. 大畫面燈箱 (Lightbox Slider) =================
 const imageModal = document.getElementById('image-modal');
 const enlargedImg = document.getElementById('enlarged-img');
 const closeModal = document.getElementById('close-modal');
 
-if (mapImg && imageModal && enlargedImg) {
-    mapImg.addEventListener('click', () => {
-        enlargedImg.src = mapImg.src;
+function openLightbox(src) {
+    if (imageModal && enlargedImg) {
+        enlargedImg.src = src;
         imageModal.classList.remove('hidden');
+        addSwipeInteractionToModal();
+    }
+}
+
+function addSwipeInteractionToModal() {
+    const modalTouchZone = document.getElementById('modal-touch-zone');
+    if (!modalTouchZone) return;
+
+    let isModalDragging = false;
+    let startModalX = 0;
+    let swipeThreshold = 80; 
+
+    const startModalDrag = (e) => {
+        if (e.cancelable) e.preventDefault(); // 🚀 防止大圖被瀏覽器內建拖動干擾
+        isModalDragging = true;
+        startModalX = e.clientX || e.touches[0].clientX;
+        modalTouchZone.style.transition = 'none';
+        modalTouchZone.style.cursor = 'grabbing';
+    }
+
+    const moveModalDrag = (e) => {
+        if (!isModalDragging) return;
+        const currentModalX = e.clientX || (e.touches && e.touches[0].clientX);
+        if (currentModalX === undefined) return;
+        
+        const diffX = currentModalX - startModalX;
+        modalTouchZone.style.transform = `translateX(${diffX}px) scale(1)`; 
+    }
+
+    const endModalDrag = (e) => {
+        if (!isModalDragging) return;
+        isModalDragging = false;
+        modalTouchZone.style.cursor = 'grab';
+
+        let endModalX = startModalX;
+        if (e.clientX !== undefined) {
+            endModalX = e.clientX;
+        } else if (e.changedTouches && e.changedTouches[0]) {
+            endModalX = e.changedTouches[0].clientX;
+        }
+        
+        const diffX = endModalX - startModalX;
+        modalTouchZone.style.transition = 'transform 0.3s cubic-bezier(0.23, 1, 0.32, 1)';
+
+        if (diffX < -swipeThreshold) {
+            currentPhotoIndex = (currentPhotoIndex + 1) % weddingPhotos.length; 
+        } else if (diffX > swipeThreshold) {
+            currentPhotoIndex = (currentPhotoIndex - 1 + weddingPhotos.length) % weddingPhotos.length;
+        }
+
+        updateCarouselPosition();
+        if (enlargedImg) enlargedImg.src = weddingPhotos[currentPhotoIndex];
+        modalTouchZone.style.transform = 'translateX(0px) scale(1)';
+    }
+
+    modalTouchZone.addEventListener('mousedown', startModalDrag);
+    window.addEventListener('mousemove', moveModalDrag); // 🚀 改綁到 window 確保流暢度
+    window.addEventListener('mouseup', endModalDrag);
+
+    modalTouchZone.addEventListener('touchstart', startModalDrag);
+    modalTouchZone.addEventListener('touchmove', moveModalDrag, { passive: true });
+    modalTouchZone.addEventListener('touchend', endModalDrag);
+}
+
+if (closeModal && imageModal) {
+    closeModal.addEventListener('click', () => {
+        const modalTouchZone = document.getElementById('modal-touch-zone');
+        if (modalTouchZone) modalTouchZone.style.transform = 'translateX(0px) scale(1)';
+        imageModal.classList.add('hidden');
     });
 }
-if (closeModal && imageModal) {
-    closeModal.addEventListener('click', () => imageModal.classList.add('hidden'));
-}
-if (imageModal) {
-    imageModal.addEventListener('click', (e) => {
-        if (e.target === imageModal) imageModal.classList.add('hidden');
+const backdrop = document.getElementById('modal-backdrop');
+if (backdrop && imageModal) {
+    backdrop.addEventListener('click', () => {
+        const modalTouchZone = document.getElementById('modal-touch-zone');
+        if (modalTouchZone) modalTouchZone.style.transform = 'translateX(0px) scale(1)';
+        imageModal.classList.add('hidden');
     });
 }
 
-// 打字特效邏輯
+// ================= 5. 其它功能防護 (地圖、打字、RSVP) =================
+const mapImg = document.getElementById('parking-map-img');
+if (mapImg) {
+    mapImg.addEventListener('click', () => {
+        const modalTouchZone = document.getElementById('modal-touch-zone');
+        if (modalTouchZone) {
+            modalTouchZone.innerHTML = `<img id="enlarged-img" src="${mapImg.src}" alt="Map">`;
+            modalTouchZone.style.cursor = 'default';
+        }
+        imageModal.classList.remove('hidden');
+    });
+}
+
 const wishMessage = document.getElementById('wish-message');
 if (wishMessage) {
     wishMessage.addEventListener('input', (e) => {
@@ -193,7 +386,6 @@ if (wishMessage) {
     });
 }
 
-// RSVP 表單人數邏輯
 const paxInput = document.getElementById('rsvp-pax');
 if (paxInput) {
     paxInput.addEventListener('input', () => {
@@ -210,12 +402,11 @@ if (paxInput) {
             if (veg) veg.value = 0;
         } else {
             if (s) s.classList.remove('hidden'); 
-            if (m) m.classList.add('hidden');
+            if (m) m.add('hidden');
         }
     });
 }
 
-// 通用送出邏輯
 const API_URL = "https://script.google.com/macros/s/AKfycbzKsZ90yBKYSlTADzaVt6PLin9tevzgnTaskNF06jNWr6G63vX8k_GEu64gx275eTrumA/exec";
 
 function handleFormSubmit(formId, formType, getPayload) {
@@ -244,33 +435,20 @@ function handleFormSubmit(formId, formType, getPayload) {
     });
 }
 
-// 註冊 RSVP
-handleFormSubmit('form-rsvp', 'rsvp', () => {
-    const pax = paxInput ? (parseInt(paxInput.value) || 1) : 1;
-    let diet = "葷";
-    const checkedDiet = document.querySelector('input[name="diet"]:checked');
-    if (checkedDiet) diet = checkedDiet.value;
-    
-    const meat = document.getElementById('diet-meat');
-    const veg = document.getElementById('diet-veg');
-    if (pax > 1 && meat && veg) diet = `葷:${meat.value},素:${veg.value}`;
-    
-    return {
-        name: document.getElementById('rsvp-name')?.value || "未填",
-        side: document.querySelector('input[name="side"]:checked')?.value || "未填",
-        pax, diet,
-        childSeat: document.getElementById('rsvp-child')?.value || 0,
-        message: document.getElementById('rsvp-message')?.value || ""
-    };
-});
+handleFormSubmit('form-rsvp', 'rsvp', () => ({
+    name: document.getElementById('rsvp-name')?.value || "未填",
+    side: document.querySelector('input[name="side"]:checked')?.value || "未填",
+    pax: paxInput ? (parseInt(paxInput.value) || 1) : 1,
+    diet: document.getElementById('rsvp-pax') && parseInt(document.getElementById('rsvp-pax').value) > 1 ? `葷:${document.getElementById('diet-meat').value},素:${document.getElementById('diet-veg').value}` : (document.querySelector('input[name="diet"]:checked')?.value || "葷"),
+    childSeat: document.getElementById('rsvp-child')?.value || 0,
+    message: document.getElementById('rsvp-message')?.value || ""
+}));
 
-// 註冊 祝福
 handleFormSubmit('form-wish', 'wish', () => ({
     name: document.getElementById('wish-name')?.value || "匿名親友",
     message: document.getElementById('wish-message')?.value || ""
 }));
 
-// 成功視窗關閉
 const btnSuccessOk = document.getElementById('btn-success-ok');
 if (btnSuccessOk) {
     btnSuccessOk.addEventListener('click', () => {
@@ -282,8 +460,14 @@ if (btnSuccessOk) {
     });
 }
 
-// 初始化執行
 document.addEventListener('DOMContentLoaded', () => {
     updateLanguage();
     initWeddingPhotos();
+    
+    window.addEventListener('resize', () => {
+        const photosSec = document.getElementById('sec-photos');
+        if (photosSec && !photosSec.classList.contains('hidden')) {
+            updateCarouselPosition();
+        }
+    });
 });

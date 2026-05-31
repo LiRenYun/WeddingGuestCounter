@@ -434,32 +434,171 @@ button, input, select, label, .pixel-btn {
     }
 }
 
-/* 獨立相簿頁面的網格 */
-.photos-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 15px;
-    margin: 25px 0;
-    max-height: 400px; /* 避免頁面拉得太長，可滾動 */
-    overflow-y: auto;
-    padding: 10px;
-}
+/* ================= 簡約懸浮相簿與手勢燈箱 CSS ================= */
+/* ================= 🚀 核心修正：動態拓寬外層 Game-Box ================= */
 
-/* 照片樣式 */
-.photo-item {
+/**
+ * 使用精準的 :has() 選擇器
+ * 當偵測到 .game-box 裡面的 #sec-photos 移除 hidden（顯示中）時，
+ * 自動把 game-box 拓寬到 1100px，退回主選單時會自動平滑縮小！
+ */
+.game-box:has(#sec-photos:not(.hidden)) {
+    max-width: 1100px !important;
+    width: 95% !important;
+    transition: max-width 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+}
+/* --- 縮圖輪播區 --- */
+/* 輪播最外層外框 */
+.carousel-wrapper {
+    display: flex;
+    justify-content: center;
+    margin: 40px auto;
     width: 100%;
-    aspect-ratio: 1 / 1;
+    max-width: 1050px; /* 容納 5 張圖的黃金寬度 */
+}
+.carousel-wrapper.hidden { display: none !important; }
+
+/* 輪播可視視窗 */
+.carousel-container {
+    overflow: hidden; /* 重要：裁切溢出部分 */
+    width: 100%;
+    /* 大幅增加電腦版預覽高度 */
+    height: 300px; 
+    position: relative;
+    display: flex;
+    align-items: center;
+    /* 游標改成可拖拉的形狀 */
+    cursor: grab; 
+    /* 防止選取文字干擾拖拉 */
+    user-select: none; 
+}
+/* 正在拖拉時的游標 */
+.carousel-container:active { cursor: grabbing; }
+
+/* 縮圖滑動軌道 */
+.carousel-track {
+    display: flex;
+    align-items: center;
+    /* 照片之間的間距，電腦版稍大 */
+    gap: 30px; 
+    /* 讓 JS 計算置中時有緩動效果 */
+    transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1); 
+    position: absolute;
+    left: 0;
+    will-change: transform; /* 優化效能 */
+}
+
+/* 預覽小圖基本樣式 - 改為懸浮現代風 */
+.photo-item {
+    /* 電腦版圖片加大 */
+    width: 150px; 
+    height: 150px; 
     object-fit: cover;
-    border: 3px solid #000;
-    cursor: pointer;
+    border: 3px solid #000; /* 保留像素邊框 */
     background-color: #fff;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    opacity: 0.6;
+    /* 基礎輕微懸浮陰影 */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); 
+    flex-shrink: 0;
+    will-change: transform, box-shadow;
+
+    /* 🔒 超強防卡死雙保險：全面禁止瀏覽器內建的圖片抓取與文字選取行為 */
+    user-select: none !important;
+    -webkit-user-drag: none !important; 
+    pointer-events: auto; /* 確保點擊大圖功能正常 */
 }
 
-.photo-item:hover {
-    transform: scale(1.03);
+/* ✨ 滑鼠懸停效果 (懸浮感增加) */
+.photo-item:hover:not(.active) {
+    transform: translateY(-8px);
+    opacity: 0.9;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
 }
 
-/* 提示方塊樣式 */
+/* ✨ 當前選中（中間）的照片 - 顯著放大且懸浮 */
+.photo-item.active {
+    /* 中間圖加大 */
+    width: 220px; 
+    height: 220px; 
+    opacity: 1;
+    border-color: #ff4757;
+    /* 強烈、柔和的懸浮陰影 */
+    box-shadow: 0 15px 35px rgba(255, 107, 129, 0.4); 
+    z-index: 5;
+    /* 置中時輕微向上懸浮 */
+    transform: scale(1) translateY(-10px); 
+}
+
+/* --- 全螢幕大圖燈箱 (移除箭頭) --- */
+.modal {
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* 燈箱本身不裁切，讓 JS 處理 */
+    overflow: hidden; 
+}
+.modal.hidden { display: none !important; }
+
+/* 燈箱背景 */
+.modal-backdrop {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.9);
+    cursor: zoom-out; /* 滑鼠指標改成縮小形狀 */
+}
+
+/* 大圖觸控拖拉區域 */
+.modal-content-wrapper {
+    max-width: 90%;
+    max-height: 85%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 5px solid #fff; /* 現代感白框 */
+    box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+    background-color: #000;
+    position: relative;
+    z-index: 10;
+    will-change: transform;
+    /* 大圖也可拖拉切換 */
+    cursor: grab; 
+}
+.modal-content-wrapper:active { cursor: grabbing; }
+
+#enlarged-img {
+    max-width: 100%;
+    /* 限制高度，避免超出版面 */
+    max-height: 80vh; 
+    object-fit: contain;
+    display: block;
+    pointer-events: none; /* 防止圖片本身的選取干擾拖拉 */
+}
+
+/* 關閉按鈕 */
+.close-btn {
+    position: absolute;
+    top: 25px;
+    right: 35px;
+    color: #fff;
+    font-size: 50px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.2s;
+    z-index: 100;
+    user-select: none;
+}
+.close-btn:hover { color: #ff4757; }
+
+/* 🚧 沒照片時的提示方塊 (與之前相同) */
 .alert-box {
     margin: 40px auto;
     padding: 40px 20px;
@@ -467,4 +606,14 @@ button, input, select, label, .pixel-btn {
     background: #fffefb;
     color: #ff4757;
     text-align: center;
+    width: 80%;
+}
+
+/* 📱 響應式手機/平板優化調整 (縮小預覽圖大小) */
+@media (max-width: 768px) {
+    .carousel-container { height: 200px; }
+    .carousel-track { gap: 15px; }
+    .photo-item { width: 90px; height: 90px; }
+    .photo-item.active { width: 140px; height: 140px; translateY(-5px); }
+    .modal-content-wrapper { border: 3px solid #fff; max-width: 95%; }
 }

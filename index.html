@@ -177,18 +177,31 @@
 
         <section id="sec-photos" class="view-section hidden">
             <h2 data-i18n="title_photos">📷 婚紗特集</h2>
-
-            <div id="photos-container" class="photos-grid"></div>
-
+            
+            <div id="carousel-wrapper" class="carousel-wrapper">
+                <div class="carousel-container" id="carousel-touch-zone">
+                    <div id="photos-container" class="carousel-track"></div>
+                </div>
+            </div>
+            
             <div id="photos-empty-msg" class="pixel-box alert-box hidden">
                 <p data-i18n="photos_coming_soon">🚧 功能開發中，敬請期待！</p>
             </div>
 
-            <div class="form-actions">
-                <button type="button" class="pixel-btn sm nav-btn" data-target="sec-home"
-                    data-i18n="btn_back">返回主選單</button>
+            <div class="form-actions" style="margin-top: 40px;">
+                <button type="button" class="pixel-btn sm nav-btn" data-target="sec-home" data-i18n="btn_back">返回主選單</button>
             </div>
         </section>
+
+        <div id="image-modal" class="modal hidden">
+            <div class="modal-backdrop" id="modal-backdrop"></div>
+            
+            <span id="close-modal" class="close-btn">&times;</span>
+            
+            <div class="modal-content-wrapper" id="modal-touch-zone">
+                <img id="enlarged-img" src="" alt="Enlarged Image">
+            </div>
+        </div>
 
     </main>
 

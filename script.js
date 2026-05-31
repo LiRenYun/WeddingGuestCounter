@@ -3,7 +3,7 @@
  * 💡 清空下方陣列即可測試「🚧 功能開發中」提示。
  */
 
-const weddingPhotos = ["img/p1.jpg"]; 
+const weddingPhotos = ["img/p1.jpg","img/p2.jpg","img/p3.jpg","img/p4.jpg","img/p5.jpg","img/p6.jpg","img/p7.jpg"]; 
 
 // ================= 1. 多國語系字典 =================
 const translations = {

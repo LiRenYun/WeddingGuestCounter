@@ -135,9 +135,20 @@
         <section id="sec-wishes" class="view-section hidden">
             <h2 data-i18n="title_wishes">💌 留言祝福</h2>
             <form id="form-wish" class="pixel-form">
+                
+                <div class="form-group">
+                    <label data-i18n="label_wish_name">你是誰 (姓名/暱稱)</label>
+                    <input type="text" id="wish-name" class="pixel-input" data-i18n-placeholder="placeholder_wish_name" placeholder="請輸入您的名字" required>
+                </div>
+
+                <div class="form-group" style="position: relative;">
+                    <label data-i18n="label_wish_message">祝福的話語</label>
+                    <textarea id="wish-message" rows="6" class="pixel-input rpg-textarea" data-i18n-placeholder="placeholder_wish_message" placeholder="在這裡寫下對仁雲&銳芝的祝福吧..." required></textarea>
+                </div>
+
                 <div class="form-actions">
                     <button type="button" class="pixel-btn sm nav-btn" data-target="sec-home" data-i18n="btn_back">返回</button>
-                    <button type="submit" class="pixel-btn accent" data-i18n="btn_submit">送出祝福</button>
+                    <button type="submit" class="pixel-btn accent" data-i18n="btn_send_wish">送出祝福</button>
                 </div>
             </form>
         </section>

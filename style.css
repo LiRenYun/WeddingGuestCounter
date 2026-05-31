@@ -405,3 +405,31 @@ button, input, select, label, .pixel-btn {
         opacity: 0;
     }
 }
+
+/* 復古 RPG 方塊浮標特效 */
+.rpg-textarea {
+    caret-shape: block; /* 現代瀏覽器支援：將游標變成方塊 */
+    caret-color: #ff6b81; /* 游標顏色改為浪漫粉紅 */
+}
+
+/* 打字時噴出的像素小粒子 */
+.typing-particle {
+    position: fixed;
+    width: 6px;
+    height: 6px;
+    pointer-events: none;
+    z-index: 9999;
+    font-size: 10px;
+    animation: popParticle 0.4s ease-out forwards;
+}
+
+@keyframes popParticle {
+    0% {
+        transform: translate(0, 0) scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(var(--twx), var(--twy)) scale(0.5);
+        opacity: 0;
+    }
+}

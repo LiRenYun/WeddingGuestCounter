@@ -23,17 +23,24 @@ const translations = {
         "info_transport": "🚗 交通方式",
         "info_hsr": "🚄 高鐵：台南站下車，轉計程車約20-30分",
         "info_tra": "🚆 台鐵：台南火車站，轉計程車約15分",
-        "info_parking": "🅿️ 停車場配置圖"
+        "info_parking": "🅿️ 停車場配置圖",
+        
+        // 新增：祝福留言區塊的中文
+        "label_wish_name": "你是誰 (姓名/暱稱)",
+        "placeholder_wish_name": "請輸入您的名字",
+        "label_wish_message": "祝福的話語",
+        "placeholder_wish_message": "在這裡寫下對仁雲&銳芝的祝福吧...",
+        "btn_send_wish": "送出祝福"
     },
     "ja": {
-        "title": "💍仁雲&銳芝💌私たちの結婚式💍",
+        "title": "💍 仁雲&銳芝💌私たちの結婚式 💍",
         "subtitle": "2026.11.29 始まりの村へようこそ",
         "btn_rsvp": "📝 出席の返信",
         "btn_info": "🗺️ 結婚式の案内",
         "btn_wishes": "💌 お祝いのメッセージ",
         "title_rsvp": "📝 出席の返信",
         "title_info": "🗺️ 結婚式の案内",
-        "title_wishes": "💌 メッセージ",
+        "title_wishes": "💌 お祝いメッセージ",
         "btn_back": "戻る",
         "btn_submit": "送信する",
         "side_groom": "新郎側",
@@ -48,42 +55,49 @@ const translations = {
         "info_transport": "🚗 アクセス",
         "info_hsr": "🚄 高鉄：台南駅下車、タクシーで約20-30分",
         "info_tra": "🚆 台鉄：台南駅下車、タクシーで約15分",
-        "info_parking": "🅿️ 駐車場マップ"
+        "info_parking": "🅿️ 駐車場マップ",
+        
+        // 新增：祝福留言區塊的日文
+        "label_wish_name": "お名前（ニックネーム）",
+        "placeholder_wish_name": "お名前を入力してください",
+        "label_wish_message": "お祝いのメッセージ",
+        "placeholder_wish_message": "ここに仁雲＆銳芝への祝福の言葉を書いてください...",
+        "btn_send_wish": "お祝いを送る"
     }
 };
 
-// ================= 2. 語系切換邏輯 =================
-let currentLang = 'zh'; // 預設語言為繁體中文
+// ================= 2. 語系切換邏輯 (已升級支援 Placeholder 屬性) =================
+let currentLang = 'zh';
 
 const langBtn = document.getElementById('btn-lang');
 langBtn.addEventListener('click', () => {
-    // 切換語言
     currentLang = currentLang === 'zh' ? 'ja' : 'zh';
     
-    // 更新畫面上所有帶有 data-i18n 的元素
+    // A. 更新一般帶有文字的元素
     document.querySelectorAll('[data-i18n]').forEach(element => {
         const key = element.getAttribute('data-i18n');
         if (translations[currentLang][key]) {
             element.innerText = translations[currentLang][key];
         }
     });
+
+    // B. 更新輸入框的提示字 (Placeholder)
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(element => {
+        const key = element.getAttribute('data-i18n-placeholder');
+        if (translations[currentLang][key]) {
+            element.setAttribute('placeholder', translations[currentLang][key]);
+        }
+    });
 });
 
 // ================= 3. 頁面切換邏輯 (返回與進入) =================
-// 抓取所有帶有 nav-btn class 的按鈕
 const navButtons = document.querySelectorAll('.nav-btn');
-
 navButtons.forEach(btn => {
     btn.addEventListener('click', () => {
-        // 取得按鈕指定的目標區塊 ID (例如: sec-info)
         const targetId = btn.getAttribute('data-target');
-        
-        // 隱藏所有 section
         document.querySelectorAll('.view-section').forEach(section => {
             section.classList.add('hidden');
         });
-        
-        // 顯示目標 section
         document.getElementById(targetId).classList.remove('hidden');
     });
 });
@@ -95,18 +109,13 @@ const enlargedImg = document.getElementById('enlarged-img');
 const closeModal = document.getElementById('close-modal');
 
 if (mapImg && imageModal) {
-    // 1. 點擊小圖，開啟 Modal
     mapImg.addEventListener('click', () => {
-        enlargedImg.src = mapImg.src; // 把小圖的網址丟給大圖
+        enlargedImg.src = mapImg.src;
         imageModal.classList.remove('hidden');
     });
-
-    // 2. 點擊 [X] 按鈕，關閉 Modal
     closeModal.addEventListener('click', () => {
         imageModal.classList.add('hidden');
     });
-
-    // 3. 點擊「黑色背景的任何地方」，也能關閉 Modal (使用者體驗更好)
     imageModal.addEventListener('click', (e) => {
         if (e.target === imageModal) {
             imageModal.classList.add('hidden');
@@ -116,11 +125,11 @@ if (mapImg && imageModal) {
 
 // ================= 5. 自訂像素拉炮與花瓣點擊動畫邏輯 =================
 document.addEventListener('click', function(e) {
-    // 取得點擊位置坐标 (相對於視窗)
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
     const x = e.clientX;
     const y = e.clientY;
 
-    // 建立一個 Confetti 容器 (如果還沒建立的話)
     let container = document.querySelector('.confetti-container');
     if (!container) {
         container = document.createElement('div');
@@ -128,15 +137,12 @@ document.addEventListener('click', function(e) {
         document.body.appendChild(container);
     }
 
-    // 動態產生粒子，包含原有的像素 Confetti 和新增的像素花瓣
-    const particleCount = 18; // 增加粒子數量，更有層次感
-    const colorsConfetti = ['#ff9fb2', '#8ce1d5', '#bda4ff', '#fffd80', '#ffffff']; // 原有 bold 彩色
-    const colorsPetal = ['#ffdae0', '#dbffff', '#e6daff', '#ffffee', '#ffffff']; // 新增 粉嫩柔和花瓣色
+    const particleCount = 18;
+    const colorsConfetti = ['#ff9fb2', '#8ce1d5', '#bda4ff', '#fffd80', '#ffffff'];
+    const colorsPetal = ['#ffdae0', '#dbffff', '#e6daff', '#ffffee', '#ffffff'];
 
     for (let i = 0; i < particleCount; i++) {
         const particle = document.createElement('div');
-        
-        // 隨機決定是 Confetti (0) 還是 花瓣 (1)
         const particleType = Math.floor(Math.random() * 2);
         
         if (particleType === 0) {
@@ -147,32 +153,21 @@ document.addEventListener('click', function(e) {
             particle.style.backgroundColor = colorsPetal[Math.floor(Math.random() * colorsPetal.length)];
         }
         
-        // 散開與旋轉邏輯
         const angle = Math.random() * Math.PI * 2;
-        const radius = Math.random() * 120 + 60; // 稍微擴大散開半徑
+        const radius = Math.random() * 120 + 60;
         const dx = Math.cos(angle) * radius;
         const dy = Math.sin(angle) * radius;
-        const dr = (Math.random() - 0.5) * 360; // 旋轉度數
+        const dr = (Math.random() - 0.5) * 360;
 
-        // 將變數傳給 CSS keyframes
         particle.style.setProperty('--dx', `${dx}px`);
         particle.style.setProperty('--dy', `${dy}px`);
         particle.style.setProperty('--dr', `${dr}deg`);
-        
-        // 設定初始位置為點擊位置
         particle.style.left = `${x}px`;
         particle.style.top = `${y}px`;
-
-        // 隨機動畫延時，更有層次感
         particle.style.animationDelay = `${Math.random() * 0.1}s`;
 
-        // 將粒子加入容器
         container.appendChild(particle);
-
-        // 動畫結束後從 DOM 移除粒子
-        particle.addEventListener('animationend', function() {
-            particle.remove();
-        });
+        particle.addEventListener('animationend', () => particle.remove());
     }
 });
 
@@ -182,7 +177,6 @@ const rsvpStep2 = document.getElementById('rsvp-step-2');
 const btnNextStep = document.getElementById('btn-next-step');
 const btnPrevStep = document.getElementById('btn-prev-step');
 
-// 取得人數與葷素相關 DOM
 const paxInput = document.getElementById('rsvp-pax');
 const dietSingle = document.getElementById('diet-single');
 const dietMultiple = document.getElementById('diet-multiple');
@@ -190,30 +184,24 @@ const dietMeat = document.getElementById('diet-meat');
 const dietVeg = document.getElementById('diet-veg');
 const dietError = document.getElementById('diet-error');
 
-// 點擊「下一步」
 btnNextStep.addEventListener('click', () => {
-    // 檢查是否有選擇男方或女方
     const sideSelected = document.querySelector('input[name="side"]:checked');
     if (!sideSelected) {
         alert('請先選擇您是哪一方的親友喔！');
         return;
     }
-    // 隱藏第一步，顯示第二步
     rsvpStep1.classList.add('hidden');
     rsvpStep2.classList.remove('hidden');
 });
 
-// 點擊「上一步」
 btnPrevStep.addEventListener('click', () => {
     rsvpStep2.classList.add('hidden');
     rsvpStep1.classList.remove('hidden');
 });
 
-// 監聽參與人數變化，動態切換葷素輸入介面
 if (paxInput) {
     paxInput.addEventListener('input', () => {
         const pax = parseInt(paxInput.value) || 1;
-        
         if (pax > 1) {
             dietSingle.classList.add('hidden');
             dietMultiple.classList.remove('hidden');
@@ -227,79 +215,60 @@ if (paxInput) {
     });
 }
 
-// ================= 7. 表單送出 & API 串接邏輯 =================
-const rsvpForm = document.getElementById('form-rsvp');
+// ================= 7. 表單共同 API 設定 =================
+const API_URL = "https://script.google.com/macros/s/AKfycbzKsZ90yBKYSlTADzaVt6PLin9tevzgnTaskNF06jNWr6G63vX8k_GEu64gx275eTrumA/exec";
 const successModal = document.getElementById('success-modal');
 const btnSuccessOk = document.getElementById('btn-success-ok');
 
-// Google Apps Script URL
-const API_URL = "https://script.google.com/macros/s/AKfycbzKsZ90yBKYSlTADzaVt6PLin9tevzgnTaskNF06jNWr6G63vX8k_GEu64gx275eTrumA/exec";
-
+// --- 報名表單送出邏輯 ---
+const rsvpForm = document.getElementById('form-rsvp');
 if (rsvpForm) {
     rsvpForm.addEventListener('submit', function (e) {
-        e.preventDefault(); // 防止網頁重新整理
+        e.preventDefault();
 
-        // === 防呆驗證 (Defense) ===
         const pax = parseInt(paxInput.value) || 1;
         let finalDiet = "";
 
         if (pax > 1) {
             const meatCount = parseInt(dietMeat.value) || 0;
             const vegCount = parseInt(dietVeg.value) || 0;
-            
-            // 檢查葷素總和是否等於總人數
             if (meatCount + vegCount !== pax) {
                 dietError.classList.remove('hidden');
                 alert('⚠️ 葷食與素食人數總和，必須剛好等於參與總人數喔！');
-                return; // 終止執行，不送出表單
-            } else {
-                dietError.classList.add('hidden');
+                return;
             }
-            // 組合多人葷素字串格式
             finalDiet = `葷食: ${meatCount}, 素食: ${vegCount}`;
         } else {
-            // 單人模式直接抓單選按鈕的值
             finalDiet = document.querySelector('input[name="diet"]:checked').value;
         }
-        // ========================
 
-        // 將按鈕改為傳送中狀態，避免重複點擊
         const submitBtn = rsvpForm.querySelector('button[type="submit"]');
         const originalBtnText = submitBtn.innerText;
         submitBtn.innerText = "傳送中... ⏳";
         submitBtn.disabled = true;
 
-        // 收集表單資料
         const payload = {
             formType: "rsvp",
             name: document.getElementById('rsvp-name').value,
             side: document.querySelector('input[name="side"]:checked').value,
             pax: pax,
-            diet: finalDiet, // 使用剛剛判斷好的葷素資料
+            diet: finalDiet,
             childSeat: document.getElementById('rsvp-child').value || 0,
             message: document.getElementById('rsvp-message').value || "無"
         };
 
-        // 發送資料至 Google Excel
         fetch(API_URL, {
             method: 'POST',
             mode: 'no-cors',
             redirect: "follow",
-            headers: {
-                'Content-Type': 'text/plain;charset=utf-8',
-            },
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify(payload)
         })
         .then(() => {
-            // 傳送成功：顯示自訂的成功視窗
             successModal.classList.remove('hidden');
-            rsvpForm.reset(); // 清空表單內容
-            
-            // 重置表單狀態回第一步
+            rsvpForm.reset();
             rsvpStep2.classList.add('hidden');
             rsvpStep1.classList.remove('hidden');
-
-            // 觸發人數重置的 UI 連動
             dietSingle.classList.remove('hidden');
             dietMultiple.classList.add('hidden');
         })
@@ -308,20 +277,88 @@ if (rsvpForm) {
             alert("❌ 傳送失敗，請稍後再試。");
         })
         .finally(() => {
-            // 恢復按鈕狀態
             submitBtn.innerText = originalBtnText;
             submitBtn.disabled = false;
         });
     });
 }
 
-// 點擊祝賀視窗的「確認並回首頁」
+// ================= 8. 祝福留言表單送出 & 打字特效邏輯 (支援中日文切換) =================
+const wishForm = document.getElementById('form-wish');
+const wishMessage = document.getElementById('wish-message');
+
+// --- 8a. 浮標打字散落像素粒子特效 (完美支援中文) ---
+if (wishMessage) {
+    wishMessage.addEventListener('input', function(e) {
+        if (e.inputType && !e.inputType.startsWith('insert')) return;
+
+        const rect = wishMessage.getBoundingClientRect();
+        
+        for (let i = 0; i < 2; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'typing-particle';
+            
+            particle.innerText = Math.random() > 0.5 ? '💖' : '▪';
+            
+            const startX = rect.left + 20 + (Math.random() * (rect.width - 40));
+            const startY = rect.top + (rect.height / 2) + (Math.random() * 20);
+            
+            particle.style.left = `${startX}px`;
+            particle.style.top = `${startY}px`;
+
+            const twx = (Math.random() - 0.5) * 60;
+            const twy = (Math.random() - 1) * 40; 
+            particle.style.setProperty('--twx', `${twx}px`);
+            particle.style.setProperty('--twy', `${twy}px`);
+
+            document.body.appendChild(particle);
+            particle.addEventListener('animationend', () => particle.remove());
+        }
+    });
+}
+
+// --- 8b. 祝福表單送出 ---
+if (wishForm) {
+    wishForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const submitBtn = wishForm.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn.innerText;
+        submitBtn.innerText = "傳送中... ⏳";
+        submitBtn.disabled = true;
+
+        const payload = {
+            formType: "wish", 
+            name: document.getElementById('wish-name').value,
+            message: document.getElementById('wish-message').value
+        };
+
+        fetch(API_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            redirect: "follow",
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(payload)
+        })
+        .then(() => {
+            successModal.classList.remove('hidden');
+            wishForm.reset();
+        })
+        .catch(err => {
+            console.error("API 錯誤:", err);
+            alert("❌ 傳送失敗，請稍後再試。");
+        })
+        .finally(() => {
+            submitBtn.innerText = originalBtnText;
+            submitBtn.disabled = false;
+        });
+    });
+}
+
+// --- 點擊祝賀視窗的「確認並回首頁」 ---
 if (btnSuccessOk) {
     btnSuccessOk.addEventListener('click', () => {
-        // 隱藏成功視窗
         successModal.classList.add('hidden');
-        
-        // 隱藏所有 section，並顯示首頁
         document.querySelectorAll('.view-section').forEach(section => {
             section.classList.add('hidden');
         });

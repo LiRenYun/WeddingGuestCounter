@@ -5,7 +5,7 @@
 
 const weddingPhotos = ["img/p1.jpg","img/p2.jpg","img/p3.jpg","img/p4.jpg","img/p5.jpg","img/p6.jpg","img/p7.jpg"]; 
 
-// ================= 1. 多國語系字典 =================
+// ================= 1. 多國語系字典 (i18n) =================
 const translations = {
     "zh": {
         "title": "💍 仁雲&銳芝💌我們的婚禮 💍",
@@ -75,7 +75,7 @@ const translations = {
     }
 };
 
-// ================= 2. 語系與頁面切換核心 =================
+// ================= 2. 語系與頁面切換核心邏輯 =================
 let currentLang = 'zh';
 
 function updateLanguage() {
@@ -101,43 +101,146 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         const targetId = btn.getAttribute('data-target');
         const targetSection = document.getElementById(targetId);
-        const gameBox = document.querySelector('.game-box');
         
         if (targetSection) {
             document.querySelectorAll('.view-section').forEach(sec => sec.classList.add('hidden'));
             targetSection.classList.remove('hidden');
             
-            // 🚀 【核心修正】：進入婚紗相簿時，用最穩固的方法拓寬 Game-box，退出時縮回
             if (targetId === 'sec-photos') {
-                if (gameBox) gameBox.classList.add('expanded');
+                document.querySelector('.game-box').classList.add('expanded');
                 initWeddingPhotos();
             } else {
-                if (gameBox) gameBox.classList.remove('expanded');
+                document.querySelector('.game-box').classList.remove('expanded');
+            }
+
+            if (targetId === 'sec-rsvp') {
+                resetRsvpSteps();
             }
         }
     });
 });
 
-// ================= 3. 婚紗相簿 - 浮動置中輪播與連動核心 =================
-let currentPhotoIndex = 0; 
-let isDragMoving = false; // 🚀 用來精準切分「點擊」與「拖拉」的核心金鑰
+// ================= 3. RSVP 表單步驟切換邏輯 =================
+function resetRsvpSteps() {
+    const step1 = document.getElementById('rsvp-step-1');
+    const step2 = document.getElementById('rsvp-step-2');
+    if (step1 && step2) {
+        step1.classList.remove('hidden');
+        step2.classList.add('hidden');
+    }
+}
 
-// 3a. 初始化相簿
+const btnNextStep = document.getElementById('btn-next-step');
+if (btnNextStep) {
+    btnNextStep.addEventListener('click', () => {
+        const sideChecked = document.querySelector('input[name="side"]:checked');
+        if (!sideChecked) {
+            alert(currentLang === 'zh' ? "請先選擇您是哪一方的親友喔！" : "どちらの親族か選択してください。");
+            return;
+        }
+        document.getElementById('rsvp-step-1').classList.add('hidden');
+        document.getElementById('rsvp-step-2').classList.remove('hidden');
+    });
+}
+
+const btnPrevStep = document.getElementById('btn-prev-step');
+if (btnPrevStep) {
+    btnPrevStep.addEventListener('click', () => {
+        document.getElementById('rsvp-step-2').classList.add('hidden');
+        document.getElementById('rsvp-step-1').classList.remove('hidden');
+    });
+}
+
+
+// ================= 4. 🚀【完整防禦修復】：人數防護（Defense機制） =================
+const rsvpPax = document.getElementById('rsvp-pax');
+const dietSingle = document.getElementById('diet-single');
+const dietMultiple = document.getElementById('diet-multiple');
+const dietMeat = document.getElementById('diet-meat');
+const dietVeg = document.getElementById('diet-veg');
+
+if (rsvpPax) {
+    rsvpPax.addEventListener('input', () => {
+        // Defense 1: 防止輸入負數、0 或非數字，低於 1 強制歸 1
+        let total = parseInt(rsvpPax.value);
+        if (isNaN(total) || total < 1) {
+            total = 1;
+            rsvpPax.value = 1;
+        }
+        // Defense 2: 設定合理上限值（例如最多 99 人），防惡意輸入
+        if (total > 99) {
+            total = 99;
+            rsvpPax.value = 99;
+        }
+
+        // 連動葷素區塊切換
+        if (total > 1) {
+            if (dietSingle) dietSingle.classList.add('hidden');
+            if (dietMultiple) dietMultiple.classList.remove('hidden');
+            // 預設將總人數分配給葷食
+            if (dietMeat) dietMeat.value = total;
+            if (dietVeg) dietVeg.value = 0;
+        } else {
+            if (dietSingle) dietSingle.classList.remove('hidden');
+            if (dietMultiple) dietMultiple.classList.add('hidden');
+        }
+    });
+}
+
+// Defense 3: 多人時，葷食與素食人數防呆與自動加總校正
+if (dietMeat && dietVeg && rsvpPax) {
+    const handleDietDefense = (changedInput) => {
+        let total = parseInt(rsvpPax.value) || 1;
+        let meat = parseInt(dietMeat.value);
+        let veg = parseInt(dietVeg.value);
+
+        // 防止小於 0
+        if (isNaN(meat) || meat < 0) { meat = 0; dietMeat.value = 0; }
+        if (isNaN(veg) || veg < 0) { veg = 0; dietVeg.value = 0; }
+
+        // 如果目前改的是葷食，自動去計算素食 = 總人數 - 葷食
+        if (changedInput === 'meat') {
+            if (meat > total) {
+                meat = total;
+                dietMeat.value = total;
+            }
+            veg = total - meat;
+            dietVeg.value = veg;
+        } 
+        // 如果目前改的是素食，自動去計算葷食 = 總人數 - 素食
+        else if (changedInput === 'veg') {
+            if (veg > total) {
+                veg = total;
+                dietVeg.value = total;
+            }
+            meat = total - veg;
+            dietMeat.value = meat;
+        }
+    };
+
+    dietMeat.addEventListener('input', () => handleDietDefense('meat'));
+    dietVeg.addEventListener('input', () => handleDietDefense('veg'));
+}
+
+
+// ================= 5. 婚紗相簿 - 浮動置中輪播與手勢核心 =================
+let currentPhotoIndex = 0; 
+let isDragMoving = false; 
+
 function initWeddingPhotos() {
-    const wrapper = document.getElementById('carousel-wrapper');
     const container = document.getElementById('photos-container');
     const emptyMsg = document.getElementById('photos-empty-msg');
     
-    if (!container || !emptyMsg || !wrapper) return;
+    if (!container || !emptyMsg) return;
 
     if (weddingPhotos.length === 0) {
-        wrapper.classList.add('hidden'); 
+        container.classList.add('hidden'); 
         emptyMsg.classList.remove('hidden'); 
         return;
     }
 
     emptyMsg.classList.add('hidden');
-    wrapper.classList.remove('hidden');
+    container.classList.remove('hidden');
     
     if (container.children.length === 0) {
         container.innerHTML = '';
@@ -146,18 +249,14 @@ function initWeddingPhotos() {
             img.src = src;
             img.className = 'photo-item';
             img.alt = `Wedding Photo ${index + 1}`;
-            img.setAttribute('draggable', 'false'); // 停用 HTML5 原生圖片拖動機制
+            img.setAttribute('draggable', 'false'); 
             
-            // 🚀 【核心修正】：當網路上的圖片成功下載完畢時，立刻觸發重新置中校正，解決 GitHub Pages 跑版問題
             img.onload = () => {
                 updateCarouselPosition();
             };
             
-            // 點選小照片事件
             img.addEventListener('click', (e) => {
-                // 如果剛剛其實是在做拖拉動作，就攔截此點擊，不開啟大圖
                 if (isDragMoving) return; 
-                
                 currentPhotoIndex = index;
                 updateCarouselPosition();
                 openLightbox(src);
@@ -167,16 +266,13 @@ function initWeddingPhotos() {
         
         addDragInteractionToCarousel();
     }
-    
-    // 初始化校正
-    setTimeout(() => { updateCarouselPosition(0); }, 50);
+    updateCarouselPosition(0); 
 }
 
-// 3b. 動態將目前 index 的縮圖推移至中央並放大
 function updateCarouselPosition(customSpeed) {
     const container = document.getElementById('photos-container');
     const items = container.querySelectorAll('.photo-item');
-    const viewContainer = document.querySelector('.carousel-container');
+    const viewContainer = document.querySelector('.game-box');
     
     if (items.length === 0 || !viewContainer) return;
 
@@ -190,10 +286,6 @@ function updateCarouselPosition(customSpeed) {
 
     const activeItem = items[currentPhotoIndex];
     const containerWidth = viewContainer.offsetWidth;
-    
-    // 如果圖片寬度還沒載入成功 (例如 0)，不進行錯誤位移，等待 onload 修正
-    if (activeItem.offsetWidth === 0) return;
-
     const trackOffset = (containerWidth / 2) - (activeItem.offsetLeft + activeItem.offsetWidth / 2);
     
     if (customSpeed !== undefined) {
@@ -204,9 +296,8 @@ function updateCarouselPosition(customSpeed) {
     container.style.transform = `translateX(${trackOffset}px)`;
 }
 
-// 3c. 縮圖軌道手勢拖拉切換算法
 function addDragInteractionToCarousel() {
-    const touchZone = document.getElementById('carousel-touch-zone');
+    const touchZone = document.getElementById('photos-container');
     if (!touchZone) return;
 
     let isDragging = false;
@@ -221,40 +312,28 @@ function addDragInteractionToCarousel() {
     }
 
     const startDrag = (e) => {
-        const items = touchZone.querySelectorAll('.photo-item');
-        if (items.length <= 1) return; 
-
         isDragging = true;
-        isDragMoving = false; // 重置拖動標記
-        touchZone.style.cursor = 'grabbing'; 
-        
+        isDragMoving = false; 
         startX = e.clientX || e.touches[0].clientX;
-        startOffset = getCurrentTranslate(document.getElementById('photos-container'));
-        document.getElementById('photos-container').style.transition = 'none'; 
-    }
+        startOffset = getCurrentTranslate(touchZone);
+        touchZone.style.transition = 'none'; 
+    };
 
     const moveDrag = (e) => {
         if (!isDragging) return;
-        
-        const track = document.getElementById('photos-container');
         const currentX = e.clientX || (e.touches && e.touches[0].clientX);
         if (currentX === undefined) return;
         
         const diffX = currentX - startX;
-        
-        // 🚀 【核心修正】：如果位移大於 8px，判定此動作是在拖拉，不要誤發點擊事件，解決手機和電腦衝突
         if (Math.abs(diffX) > 8) {
             isDragMoving = true; 
         }
-        
-        const newTranslate = startOffset + diffX;
-        track.style.transform = `translateX(${newTranslate}px)`;
-    }
+        touchZone.style.transform = `translateX(${startOffset + diffX}px)`;
+    };
 
     const endDrag = (e) => {
         if (!isDragging) return;
         isDragging = false;
-        touchZone.style.cursor = 'grab'; 
 
         let currentX = startX;
         if (e.clientX !== undefined) {
@@ -274,27 +353,22 @@ function addDragInteractionToCarousel() {
         }
         
         updateCarouselPosition(0.4); 
-        
-        // 🚀 延遲一瞬間放開標記，確保 click 事件完全被吃掉
         setTimeout(() => { isDragMoving = false; }, 80);
-    }
+    };
 
-    // 綁定電腦滑鼠事件
     touchZone.addEventListener('mousedown', startDrag);
-    window.addEventListener('mousemove', moveDrag); 
+    window.addEventListener('mousemove', moveDrag);
     window.addEventListener('mouseup', endDrag);
 
-    // 綁定手機觸控事件 (🚀 絕不呼叫 preventDefault，放行手機原生 Click 事件)
     touchZone.addEventListener('touchstart', startDrag);
     touchZone.addEventListener('touchmove', moveDrag, { passive: true });
     touchZone.addEventListener('touchend', endDrag);
 }
 
-// ================= 4. 大畫面燈箱 (Lightbox Slider) =================
+// ================= 6. 大畫面燈箱 (Lightbox Slider) =================
 const imageModal = document.getElementById('image-modal');
 const enlargedImg = document.getElementById('enlarged-img');
 const closeModal = document.getElementById('close-modal');
-let isModalMoving = false;
 
 function openLightbox(src) {
     if (imageModal && enlargedImg) {
@@ -310,15 +384,13 @@ function addSwipeInteractionToModal() {
 
     let isModalDragging = false;
     let startModalX = 0;
-    let swipeThreshold = 70; 
+    let swipeThreshold = 80; 
 
     const startModalDrag = (e) => {
         isModalDragging = true;
-        isModalMoving = false;
         startModalX = e.clientX || e.touches[0].clientX;
         modalTouchZone.style.transition = 'none';
-        modalTouchZone.style.cursor = 'grabbing';
-    }
+    };
 
     const moveModalDrag = (e) => {
         if (!isModalDragging) return;
@@ -326,16 +398,12 @@ function addSwipeInteractionToModal() {
         if (currentModalX === undefined) return;
         
         const diffX = currentModalX - startModalX;
-        if (Math.abs(diffX) > 8) {
-            isModalMoving = true;
-        }
-        modalTouchZone.style.transform = `translateX(${diffX}px) scale(1)`; 
-    }
+        modalTouchZone.style.transform = `translateX(${diffX}px)`.tr; 
+    };
 
     const endModalDrag = (e) => {
         if (!isModalDragging) return;
         isModalDragging = false;
-        modalTouchZone.style.cursor = 'grab';
 
         let endModalX = startModalX;
         if (e.clientX !== undefined) {
@@ -355,13 +423,11 @@ function addSwipeInteractionToModal() {
 
         updateCarouselPosition();
         if (enlargedImg) enlargedImg.src = weddingPhotos[currentPhotoIndex];
-        modalTouchZone.style.transform = 'translateX(0px) scale(1)';
-        
-        setTimeout(() => { isModalMoving = false; }, 80);
-    }
+        modalTouchZone.style.transform = 'translateX(0px)';
+    };
 
     modalTouchZone.addEventListener('mousedown', startModalDrag);
-    window.addEventListener('mousemove', moveModalDrag); 
+    window.addEventListener('mousemove', moveModalDrag);
     window.addEventListener('mouseup', endModalDrag);
 
     modalTouchZone.addEventListener('touchstart', startModalDrag);
@@ -371,32 +437,57 @@ function addSwipeInteractionToModal() {
 
 if (closeModal && imageModal) {
     closeModal.addEventListener('click', () => {
-        const modalTouchZone = document.getElementById('modal-touch-zone');
-        if (modalTouchZone) modalTouchZone.style.transform = 'translateX(0px) scale(1)';
         imageModal.classList.add('hidden');
     });
 }
 const backdrop = document.getElementById('modal-backdrop');
 if (backdrop && imageModal) {
     backdrop.addEventListener('click', () => {
-        const modalTouchZone = document.getElementById('modal-touch-zone');
-        if (modalTouchZone) modalTouchZone.style.transform = 'translateX(0px) scale(1)';
         imageModal.classList.add('hidden');
     });
 }
 
-// ================= 5. 其它功能防護 (地圖、打字、RSVP) =================
+const mPrev = document.getElementById('modal-prev');
+const mNext = document.getElementById('modal-next');
+if (mPrev) { mPrev.addEventListener('click', (e) => { e.stopPropagation(); switchLightboxPhoto('prev'); }); }
+if (mNext) { mNext.addEventListener('click', (e) => { e.stopPropagation(); switchLightboxPhoto('next'); }); }
+
+function switchLightboxPhoto(dir) {
+    if (weddingPhotos.length === 0) return;
+    if (dir === 'next') {
+        currentPhotoIndex = (currentPhotoIndex + 1) % weddingPhotos.length;
+    } else if (dir === 'prev') {
+        currentPhotoIndex = (currentPhotoIndex - 1 + weddingPhotos.length) % weddingPhotos.length;
+    }
+    updateCarouselPosition();
+    if (enlargedImg) enlargedImg.src = weddingPhotos[currentPhotoIndex];
+}
+
+// ================= 7. 其他表單功能與對接 =================
 const mapImg = document.getElementById('parking-map-img');
 if (mapImg) {
     mapImg.addEventListener('click', () => {
+        const mPrev = document.getElementById('modal-prev');
+        const mNext = document.getElementById('modal-next');
+        if (mPrev) mPrev.style.display = 'none';
+        if (mNext) mNext.style.display = 'none';
+        
         const modalTouchZone = document.getElementById('modal-touch-zone');
         if (modalTouchZone) {
             modalTouchZone.innerHTML = `<img id="enlarged-img" src="${mapImg.src}" alt="Map">`;
-            modalTouchZone.style.cursor = 'default';
         }
         imageModal.classList.remove('hidden');
     });
 }
+
+document.querySelectorAll('.photo-item, #image-modal .close-btn, #modal-backdrop').forEach(el => {
+    el.addEventListener('click', () => {
+        const mPrev = document.getElementById('modal-prev');
+        const mNext = document.getElementById('modal-next');
+        if (mPrev) mPrev.style.display = 'block';
+        if (mNext) mNext.style.display = 'block';
+    });
+});
 
 const wishMessage = document.getElementById('wish-message');
 if (wishMessage) {
@@ -413,27 +504,6 @@ if (wishMessage) {
             p.style.setProperty('--twy', `${(Math.random() - 1) * 40}px`);
             document.body.appendChild(p);
             p.addEventListener('animationend', () => p.remove());
-        }
-    });
-}
-
-const paxInput = document.getElementById('rsvp-pax');
-if (paxInput) {
-    paxInput.addEventListener('input', () => {
-        const pax = parseInt(paxInput.value) || 1;
-        const s = document.getElementById('diet-single');
-        const m = document.getElementById('diet-multiple');
-        const meat = document.getElementById('diet-meat');
-        const veg = document.getElementById('diet-veg');
-        
-        if (pax > 1) {
-            if (s) s.classList.add('hidden'); 
-            if (m) m.classList.remove('hidden');
-            if (meat) meat.value = pax;
-            if (veg) veg.value = 0;
-        } else {
-            if (s) s.classList.remove('hidden'); 
-            if (m) m.classList.add('hidden');
         }
     });
 }
@@ -469,8 +539,8 @@ function handleFormSubmit(formId, formType, getPayload) {
 handleFormSubmit('form-rsvp', 'rsvp', () => ({
     name: document.getElementById('rsvp-name')?.value || "未填",
     side: document.querySelector('input[name="side"]:checked')?.value || "未填",
-    pax: paxInput ? (parseInt(paxInput.value) || 1) : 1,
-    diet: document.getElementById('rsvp-pax') && parseInt(document.getElementById('rsvp-pax').value) > 1 ? `葷:${document.getElementById('diet-meat').value},素:${document.getElementById('diet-veg').value}` : (document.querySelector('input[name="diet"]:checked')?.value || "葷"),
+    pax: rsvpPax ? (parseInt(rsvpPax.value) || 1) : 1,
+    diet: rsvpPax && parseInt(rsvpPax.value) > 1 ? `葷:${dietMeat.value},素:${dietVeg.value}` : (document.querySelector('input[name="diet"]:checked')?.value || "葷"),
     childSeat: document.getElementById('rsvp-child')?.value || 0,
     message: document.getElementById('rsvp-message')?.value || ""
 }));
@@ -486,25 +556,17 @@ if (btnSuccessOk) {
         const successModal = document.getElementById('success-modal');
         if (successModal) successModal.classList.add('hidden');
         document.querySelectorAll('.view-section').forEach(sec => sec.classList.add('hidden'));
-        const homeSec = document.getElementById('sec-home');
-        if (homeSec) homeSec.classList.remove('hidden');
+        document.getElementById('sec-home').classList.remove('hidden');
+        document.querySelector('.game-box').classList.remove('expanded');
     });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
     updateLanguage();
     initWeddingPhotos();
-    
-    // 全域視窗改變大小校正
-    window.addEventListener('resize', () => {
-        const photosSec = document.getElementById('sec-photos');
-        if (photosSec && !photosSec.classList.contains('hidden')) {
-            updateCarouselPosition();
-        }
-    });
+    setTimeout(() => { updateCarouselPosition(); }, 150);
 });
 
-// 🚀 最終保險：網頁全部資源 (包含外部雲端大圖) 載入完畢後，再次強制洗牌置中一次
 window.addEventListener('load', () => {
     updateCarouselPosition();
 });

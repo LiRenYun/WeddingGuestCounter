@@ -9,7 +9,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💖</text></svg>">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💖</text></svg>">
 </head>
 
 <body>
@@ -27,26 +28,34 @@
 
             <div class="menu-buttons">
                 <button class="pixel-btn primary nav-btn" data-target="sec-rsvp" data-i18n="btn_rsvp">📝 報名參加</button>
-                <button class="pixel-btn secondary nav-btn" data-target="sec-info" data-i18n="btn_info">🗺️ 婚宴資訊</button>
-                <button class="pixel-btn accent nav-btn" data-target="sec-wishes" data-i18n="btn_wishes">💌 想對新人說的話</button>
+                <button class="pixel-btn secondary nav-btn" data-target="sec-info" data-i18n="btn_info">🗺️
+                    婚宴資訊</button>
+                <button class="pixel-btn nav-btn" data-target="sec-wishes" data-i18n="btn_wishes"
+                    style="background-color: #ff9fb2;">💌 想對新人說的話</button>
+                <button class="pixel-btn accent nav-btn" data-target="sec-photos" data-i18n="btn_photos">📷
+                    婚紗特集</button>
             </div>
         </section>
 
         <section id="sec-rsvp" class="view-section hidden">
             <h2 data-i18n="title_rsvp">📝 報名參加</h2>
             <form id="form-rsvp" class="pixel-form">
-                
+
                 <div id="rsvp-step-1">
                     <div class="form-group">
                         <label data-i18n="label_side">您是哪一方的親友？</label>
                         <div class="radio-group">
-                            <label><input type="radio" name="side" value="男方親友" required> <span data-i18n="side_groom">男方</span></label>
-                            <label><input type="radio" name="side" value="女方親友"> <span data-i18n="side_bride">女方</span></label>
+                            <label><input type="radio" name="side" value="男方親友" required> <span
+                                    data-i18n="side_groom">男方</span></label>
+                            <label><input type="radio" name="side" value="女方親友"> <span
+                                    data-i18n="side_bride">女方</span></label>
                         </div>
                     </div>
                     <div class="form-actions">
-                        <button type="button" class="pixel-btn sm nav-btn" data-target="sec-home" data-i18n="btn_back">返回</button>
-                        <button type="button" id="btn-next-step" class="pixel-btn primary" data-i18n="btn_next">下一步</button>
+                        <button type="button" class="pixel-btn sm nav-btn" data-target="sec-home"
+                            data-i18n="btn_back">返回</button>
+                        <button type="button" id="btn-next-step" class="pixel-btn primary"
+                            data-i18n="btn_next">下一步</button>
                     </div>
                 </div>
 
@@ -55,30 +64,33 @@
                         <label data-i18n="label_name">姓名</label>
                         <input type="text" id="rsvp-name" class="pixel-input" required>
                     </div>
-                    
+
                     <div class="form-group">
                         <label data-i18n="label_pax">參與人數</label>
                         <input type="number" id="rsvp-pax" class="pixel-input" min="1" value="1" required>
                     </div>
-                    
+
                     <div class="form-group">
                         <label data-i18n="label_diet">葷素選擇</label>
-                        
+
                         <div id="diet-single" class="radio-group">
                             <label><input type="radio" name="diet" value="葷食" checked> 🥩 葷食</label>
                             <label><input type="radio" name="diet" value="素食"> 🥗 素食</label>
                         </div>
-                        
+
                         <div id="diet-multiple" class="hidden">
                             <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
                                 <label style="width: 80px; margin: 0;">🥩 葷食:</label>
-                                <input type="number" id="diet-meat" class="pixel-input" min="0" value="1" style="width: 80px;"> 人
+                                <input type="number" id="diet-meat" class="pixel-input" min="0" value="1"
+                                    style="width: 80px;"> 人
                             </div>
                             <div style="display: flex; align-items: center; gap: 10px;">
                                 <label style="width: 80px; margin: 0;">🥗 素食:</label>
-                                <input type="number" id="diet-veg" class="pixel-input" min="0" value="0" style="width: 80px;"> 人
+                                <input type="number" id="diet-veg" class="pixel-input" min="0" value="0"
+                                    style="width: 80px;"> 人
                             </div>
-                            <div id="diet-error" class="hidden" style="color: #ff6b81; font-size: 0.85rem; margin-top: 5px;">
+                            <div id="diet-error" class="hidden"
+                                style="color: #ff6b81; font-size: 0.85rem; margin-top: 5px;">
                                 ⚠️ 葷食與素食人數總和必須等於參與總人數！
                             </div>
                         </div>
@@ -86,16 +98,19 @@
 
                     <div class="form-group">
                         <label data-i18n="label_child">兒童座椅數量</label>
-                        <input type="number" id="rsvp-child" class="pixel-input" min="0" value="0" placeholder="不需要請填 0">
+                        <input type="number" id="rsvp-child" class="pixel-input" min="0" value="0"
+                            placeholder="不需要請填 0">
                     </div>
-                    
+
                     <div class="form-group">
                         <label data-i18n="label_note">備註/祝福</label>
-                        <textarea id="rsvp-message" rows="2" class="pixel-input" placeholder="有什麼特別需求或想說的話嗎？"></textarea>
+                        <textarea id="rsvp-message" rows="2" class="pixel-input"
+                            placeholder="有什麼特別需求或想說的話嗎？"></textarea>
                     </div>
                     <div class="form-actions">
                         <button type="button" id="btn-prev-step" class="pixel-btn sm" data-i18n="btn_prev">上一步</button>
-                        <button type="submit" id="btn-submit-rsvp" class="pixel-btn primary" data-i18n="btn_submit">確認送出</button>
+                        <button type="submit" id="btn-submit-rsvp" class="pixel-btn primary"
+                            data-i18n="btn_submit">確認送出</button>
                     </div>
                 </div>
 
@@ -105,12 +120,14 @@
         <section id="sec-info" class="view-section hidden">
             <h2 data-i18n="title_info">🗺️ 婚宴資訊</h2>
             <div class="info-content">
-                <p><strong data-i18n="info_date_label">📅 日期:</strong> <span data-i18n="info_date">2026/11/29 (日)</span></p>
+                <p><strong data-i18n="info_date_label">📅 日期:</strong> <span data-i18n="info_date">2026/11/29 (日)</span>
+                </p>
                 <p><strong data-i18n="info_time_label">⏰ 時間:</strong> <span data-i18n="info_time">11:00 AM 進場</span></p>
                 <p><strong data-i18n="info_venue_label">📍 地點:</strong> <span data-i18n="info_venue">玄饌海鮮宴會館</span></p>
                 <p style="margin-top: 10px;">
                     <a href="https://maps.app.goo.gl/qjqtVKAnW3CYJFKL6" target="_blank" class="pixel-btn sm"
-                        data-i18n="info_map_link" style="text-decoration: none; display: inline-block;">📍 開啟 Google Maps</a>
+                        data-i18n="info_map_link" style="text-decoration: none; display: inline-block;">📍 開啟 Google
+                        Maps</a>
                 </p>
 
                 <div class="pixel-box">
@@ -128,29 +145,49 @@
                 </div>
             </div>
             <div class="form-actions" style="margin-top: 20px;">
-                <button type="button" class="pixel-btn sm nav-btn" data-target="sec-home" data-i18n="btn_back">返回</button>
+                <button type="button" class="pixel-btn sm nav-btn" data-target="sec-home"
+                    data-i18n="btn_back">返回</button>
             </div>
         </section>
 
         <section id="sec-wishes" class="view-section hidden">
             <h2 data-i18n="title_wishes">💌 留言祝福</h2>
             <form id="form-wish" class="pixel-form">
-                
+
                 <div class="form-group">
                     <label data-i18n="label_wish_name">你是誰 (姓名/暱稱)</label>
-                    <input type="text" id="wish-name" class="pixel-input" data-i18n-placeholder="placeholder_wish_name" placeholder="請輸入您的名字" required>
+                    <input type="text" id="wish-name" class="pixel-input" data-i18n-placeholder="placeholder_wish_name"
+                        placeholder="請輸入您的名字" required>
                 </div>
 
                 <div class="form-group" style="position: relative;">
                     <label data-i18n="label_wish_message">祝福的話語</label>
-                    <textarea id="wish-message" rows="6" class="pixel-input rpg-textarea" data-i18n-placeholder="placeholder_wish_message" placeholder="在這裡寫下對仁雲&銳芝的祝福吧..." required></textarea>
+                    <textarea id="wish-message" rows="6" class="pixel-input rpg-textarea"
+                        data-i18n-placeholder="placeholder_wish_message" placeholder="在這裡寫下對仁雲&銳芝的祝福吧..."
+                        required></textarea>
                 </div>
 
                 <div class="form-actions">
-                    <button type="button" class="pixel-btn sm nav-btn" data-target="sec-home" data-i18n="btn_back">返回</button>
+                    <button type="button" class="pixel-btn sm nav-btn" data-target="sec-home"
+                        data-i18n="btn_back">返回</button>
                     <button type="submit" class="pixel-btn accent" data-i18n="btn_send_wish">送出祝福</button>
                 </div>
             </form>
+        </section>
+
+        <section id="sec-photos" class="view-section hidden">
+            <h2 data-i18n="title_photos">📷 婚紗特集</h2>
+
+            <div id="photos-container" class="photos-grid"></div>
+
+            <div id="photos-empty-msg" class="pixel-box alert-box hidden">
+                <p data-i18n="photos_coming_soon">🚧 功能開發中，敬請期待！</p>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="pixel-btn sm nav-btn" data-target="sec-home"
+                    data-i18n="btn_back">返回主選單</button>
+            </div>
         </section>
 
     </main>
@@ -172,4 +209,5 @@
 
     <script src="script.js"></script>
 </body>
+
 </html>

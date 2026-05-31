@@ -433,3 +433,38 @@ button, input, select, label, .pixel-btn {
         opacity: 0;
     }
 }
+
+/* 獨立相簿頁面的網格 */
+.photos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 15px;
+    margin: 25px 0;
+    max-height: 400px; /* 避免頁面拉得太長，可滾動 */
+    overflow-y: auto;
+    padding: 10px;
+}
+
+/* 照片樣式 */
+.photo-item {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    border: 3px solid #000;
+    cursor: pointer;
+    background-color: #fff;
+}
+
+.photo-item:hover {
+    transform: scale(1.03);
+}
+
+/* 提示方塊樣式 */
+.alert-box {
+    margin: 40px auto;
+    padding: 40px 20px;
+    border: 4px dashed #ff4757;
+    background: #fffefb;
+    color: #ff4757;
+    text-align: center;
+}

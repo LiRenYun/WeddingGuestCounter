@@ -436,13 +436,8 @@ button, input, select, label, .pixel-btn {
 
 /* ================= 簡約懸浮相簿與手勢燈箱 CSS ================= */
 /* ================= 🚀 核心修正：動態拓寬外層 Game-Box ================= */
-
-/**
- * 使用精準的 :has() 選擇器
- * 當偵測到 .game-box 裡面的 #sec-photos 移除 hidden（顯示中）時，
- * 自動把 game-box 拓寬到 1100px，退回主選單時會自動平滑縮小！
- */
-.game-box:has(#sec-photos:not(.hidden)) {
+/* 當 JS 偵測到進入相簿頁面，會幫 game-box 加上 .expanded，使其平滑變寬 */
+.game-box.expanded {
     max-width: 1100px !important;
     width: 95% !important;
     transition: max-width 0.4s cubic-bezier(0.23, 1, 0.32, 1);

@@ -75,7 +75,7 @@ const translations = {
     }
 };
 
-// ================= 2. 語系與頁面切換核心逻辑 =================
+// ================= 2. 語系與頁面切換核心 =================
 let currentLang = 'zh';
 
 function updateLanguage() {
@@ -101,13 +101,18 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         const targetId = btn.getAttribute('data-target');
         const targetSection = document.getElementById(targetId);
+        const gameBox = document.querySelector('.game-box');
         
         if (targetSection) {
             document.querySelectorAll('.view-section').forEach(sec => sec.classList.add('hidden'));
             targetSection.classList.remove('hidden');
             
+            // 🚀 【核心修正】：進入婚紗相簿時，用最穩固的方法拓寬 Game-box，退出時縮回
             if (targetId === 'sec-photos') {
+                if (gameBox) gameBox.classList.add('expanded');
                 initWeddingPhotos();
+            } else {
+                if (gameBox) gameBox.classList.remove('expanded');
             }
         }
     });
@@ -115,6 +120,7 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
 
 // ================= 3. 婚紗相簿 - 浮動置中輪播與連動核心 =================
 let currentPhotoIndex = 0; 
+let isDragMoving = false; // 🚀 用來精準切分「點擊」與「拖拉」的核心金鑰
 
 // 3a. 初始化相簿
 function initWeddingPhotos() {
@@ -140,11 +146,18 @@ function initWeddingPhotos() {
             img.src = src;
             img.className = 'photo-item';
             img.alt = `Wedding Photo ${index + 1}`;
+            img.setAttribute('draggable', 'false'); // 停用 HTML5 原生圖片拖動機制
             
-            // 🚀 【核心修復 1】：強制停用 HTML5 原生圖片拖動，防止網頁滑鼠卡死
-            img.setAttribute('draggable', 'false'); 
+            // 🚀 【核心修正】：當網路上的圖片成功下載完畢時，立刻觸發重新置中校正，解決 GitHub Pages 跑版問題
+            img.onload = () => {
+                updateCarouselPosition();
+            };
             
-            img.addEventListener('click', () => {
+            // 點選小照片事件
+            img.addEventListener('click', (e) => {
+                // 如果剛剛其實是在做拖拉動作，就攔截此點擊，不開啟大圖
+                if (isDragMoving) return; 
+                
                 currentPhotoIndex = index;
                 updateCarouselPosition();
                 openLightbox(src);
@@ -155,7 +168,8 @@ function initWeddingPhotos() {
         addDragInteractionToCarousel();
     }
     
-    updateCarouselPosition(0); 
+    // 初始化校正
+    setTimeout(() => { updateCarouselPosition(0); }, 50);
 }
 
 // 3b. 動態將目前 index 的縮圖推移至中央並放大
@@ -176,6 +190,10 @@ function updateCarouselPosition(customSpeed) {
 
     const activeItem = items[currentPhotoIndex];
     const containerWidth = viewContainer.offsetWidth;
+    
+    // 如果圖片寬度還沒載入成功 (例如 0)，不進行錯誤位移，等待 onload 修正
+    if (activeItem.offsetWidth === 0) return;
+
     const trackOffset = (containerWidth / 2) - (activeItem.offsetLeft + activeItem.offsetWidth / 2);
     
     if (customSpeed !== undefined) {
@@ -194,7 +212,7 @@ function addDragInteractionToCarousel() {
     let isDragging = false;
     let startX = 0;
     let startOffset = 0;
-    let dragThreshold = 50; 
+    let dragThreshold = 40; 
 
     const getCurrentTranslate = (el) => {
         const style = window.getComputedStyle(el);
@@ -206,10 +224,8 @@ function addDragInteractionToCarousel() {
         const items = touchZone.querySelectorAll('.photo-item');
         if (items.length <= 1) return; 
 
-        // 🚀 【核心修復 2】：阻止滑鼠點擊圖片時的預設「抓取」行為，使拖拉變絲滑
-        if (e.cancelable) e.preventDefault(); 
-
         isDragging = true;
+        isDragMoving = false; // 重置拖動標記
         touchZone.style.cursor = 'grabbing'; 
         
         startX = e.clientX || e.touches[0].clientX;
@@ -225,6 +241,12 @@ function addDragInteractionToCarousel() {
         if (currentX === undefined) return;
         
         const diffX = currentX - startX;
+        
+        // 🚀 【核心修正】：如果位移大於 8px，判定此動作是在拖拉，不要誤發點擊事件，解決手機和電腦衝突
+        if (Math.abs(diffX) > 8) {
+            isDragMoving = true; 
+        }
+        
         const newTranslate = startOffset + diffX;
         track.style.transform = `translateX(${newTranslate}px)`;
     }
@@ -252,14 +274,17 @@ function addDragInteractionToCarousel() {
         }
         
         updateCarouselPosition(0.4); 
+        
+        // 🚀 延遲一瞬間放開標記，確保 click 事件完全被吃掉
+        setTimeout(() => { isDragMoving = false; }, 80);
     }
 
-    // 綁定電腦滑鼠
+    // 綁定電腦滑鼠事件
     touchZone.addEventListener('mousedown', startDrag);
-    window.addEventListener('mousemove', moveDrag); // 🚀 綁定到 window 避免滑鼠滑出容器時漏偵測
+    window.addEventListener('mousemove', moveDrag); 
     window.addEventListener('mouseup', endDrag);
 
-    // 綁定手機觸控
+    // 綁定手機觸控事件 (🚀 絕不呼叫 preventDefault，放行手機原生 Click 事件)
     touchZone.addEventListener('touchstart', startDrag);
     touchZone.addEventListener('touchmove', moveDrag, { passive: true });
     touchZone.addEventListener('touchend', endDrag);
@@ -269,6 +294,7 @@ function addDragInteractionToCarousel() {
 const imageModal = document.getElementById('image-modal');
 const enlargedImg = document.getElementById('enlarged-img');
 const closeModal = document.getElementById('close-modal');
+let isModalMoving = false;
 
 function openLightbox(src) {
     if (imageModal && enlargedImg) {
@@ -284,11 +310,11 @@ function addSwipeInteractionToModal() {
 
     let isModalDragging = false;
     let startModalX = 0;
-    let swipeThreshold = 80; 
+    let swipeThreshold = 70; 
 
     const startModalDrag = (e) => {
-        if (e.cancelable) e.preventDefault(); // 🚀 防止大圖被瀏覽器內建拖動干擾
         isModalDragging = true;
+        isModalMoving = false;
         startModalX = e.clientX || e.touches[0].clientX;
         modalTouchZone.style.transition = 'none';
         modalTouchZone.style.cursor = 'grabbing';
@@ -300,6 +326,9 @@ function addSwipeInteractionToModal() {
         if (currentModalX === undefined) return;
         
         const diffX = currentModalX - startModalX;
+        if (Math.abs(diffX) > 8) {
+            isModalMoving = true;
+        }
         modalTouchZone.style.transform = `translateX(${diffX}px) scale(1)`; 
     }
 
@@ -327,10 +356,12 @@ function addSwipeInteractionToModal() {
         updateCarouselPosition();
         if (enlargedImg) enlargedImg.src = weddingPhotos[currentPhotoIndex];
         modalTouchZone.style.transform = 'translateX(0px) scale(1)';
+        
+        setTimeout(() => { isModalMoving = false; }, 80);
     }
 
     modalTouchZone.addEventListener('mousedown', startModalDrag);
-    window.addEventListener('mousemove', moveModalDrag); // 🚀 改綁到 window 確保流暢度
+    window.addEventListener('mousemove', moveModalDrag); 
     window.addEventListener('mouseup', endModalDrag);
 
     modalTouchZone.addEventListener('touchstart', startModalDrag);
@@ -402,7 +433,7 @@ if (paxInput) {
             if (veg) veg.value = 0;
         } else {
             if (s) s.classList.remove('hidden'); 
-            if (m) m.add('hidden');
+            if (m) m.classList.add('hidden');
         }
     });
 }
@@ -464,10 +495,16 @@ document.addEventListener('DOMContentLoaded', () => {
     updateLanguage();
     initWeddingPhotos();
     
+    // 全域視窗改變大小校正
     window.addEventListener('resize', () => {
         const photosSec = document.getElementById('sec-photos');
         if (photosSec && !photosSec.classList.contains('hidden')) {
             updateCarouselPosition();
         }
     });
+});
+
+// 🚀 最終保險：網頁全部資源 (包含外部雲端大圖) 載入完畢後，再次強制洗牌置中一次
+window.addEventListener('load', () => {
+    updateCarouselPosition();
 });

@@ -34,6 +34,8 @@
                     style="background-color: #ff9fb2;">💌 想對新人說的話</button>
                 <button class="pixel-btn accent nav-btn" data-target="sec-photos" data-i18n="btn_photos">📷
                     婚紗特集</button>
+                <button class="pixel-btn nav-btn" data-target="sec-game" data-i18n="btn_game"
+                    style="background-color: #ffd166;">🎮 戀愛PK大作戰</button>
             </div>
         </section>
 
@@ -196,6 +198,99 @@
             <div class="form-actions" style="margin-top: 40px;">
                 <button type="button" class="pixel-btn sm nav-btn" data-target="sec-home"
                     data-i18n="btn_back">返回主選單</button>
+            </div>
+        </section>
+
+        <section id="sec-game" class="view-section hidden">
+            <h2 data-i18n="title_game">🎮 戀愛PK大作戰</h2>
+
+            <div class="game-hud">
+                <div class="hud-player hud-cupid">
+                    <div class="player-name" data-i18n="cupid_name">邱比特</div>
+                    <div id="cupid-hp-bar" class="hp-bar" title="HP">
+                        <span class="hp-item active">🏹</span>
+                        <span class="hp-item active">🏹</span>
+                        <span class="hp-item active">🏹</span>
+                        <span class="hp-item active">🏹</span>
+                        <span class="hp-item active">🏹</span>
+                    </div>
+                </div>
+
+                <div class="hud-center">
+                    <div id="game-turn-badge" class="turn-badge" data-i18n="game_turn_cupid">🏹 邱比特的回合</div>
+                    <div class="wind-box">
+                        <span data-i18n="game_wind_label">風向</span>:
+                        <span id="wind-arrow">💨</span>
+                        <span id="wind-value">0.0</span>
+                    </div>
+                </div>
+
+                <div class="hud-player hud-yuelao">
+                    <div class="player-name" data-i18n="yuelao_name">月老</div>
+                    <div id="yuelao-hp-bar" class="hp-bar" title="HP">
+                        <span class="hp-item active">🪄</span>
+                        <span class="hp-item active">🪄</span>
+                        <span class="hp-item active">🪄</span>
+                        <span class="hp-item active">🪄</span>
+                        <span class="hp-item active">🪄</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="canvas-wrapper">
+                <canvas id="game-canvas" width="800" height="420"></canvas>
+                <div id="game-toast" class="game-toast hidden"></div>
+            </div>
+
+            <div class="game-controls">
+                <button id="btn-game-charge" class="pixel-btn primary game-action-btn" data-i18n="game_btn_charge">🎯 長按蓄力發射</button>
+                <button id="btn-game-config" class="pixel-btn sm" data-i18n="game_btn_config">⚙️ 模式設定</button>
+                <button id="btn-game-reset" class="pixel-btn sm" data-i18n="game_btn_restart">🔄 重新開始</button>
+            </div>
+
+            <!-- 開局選單 Modal (預設隱藏，點擊設定或重開時開啟) -->
+            <div id="game-start-modal" class="game-modal hidden">
+                <div class="game-modal-content">
+                    <h3 data-i18n="game_modal_title">💘 對戰設定</h3>
+                    
+                    <div class="modal-section">
+                        <label class="modal-label" data-i18n="game_label_mode">遊戲模式：</label>
+                        <div class="radio-group-game">
+                            <label><input type="radio" name="game-mode" value="2p" checked> <span data-i18n="game_mode_2p">👥 雙人對戰</span></label>
+                            <label><input type="radio" name="game-mode" value="cpu"> <span data-i18n="game_mode_cpu">🤖 單人 vs 電腦</span></label>
+                        </div>
+                    </div>
+
+                    <div class="modal-section">
+                        <label class="modal-label" data-i18n="game_label_first">先攻選擇：</label>
+                        <div class="radio-group-game">
+                            <label><input type="radio" name="game-first" value="cupid" checked> <span data-i18n="game_first_cupid">邱比特先攻</span></label>
+                            <label><input type="radio" name="game-first" value="yuelao"> <span data-i18n="game_first_yuelao">月老先攻</span></label>
+                            <label><input type="radio" name="game-first" value="random"> <span data-i18n="game_first_random">🎲 隨機先攻</span></label>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
+                        <button id="btn-start-game" class="pixel-btn accent" data-i18n="game_start_btn">⚔️ 開始對決！</button>
+                        <button id="btn-close-modal" class="pixel-btn sm" data-i18n="game_btn_close">關閉</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 勝利結算 Modal -->
+            <div id="game-win-modal" class="game-modal hidden">
+                <div class="game-modal-content win-box">
+                    <h2 id="win-title" style="color: #ff6b81; font-size: 1.8rem;">🎉 獲勝！</h2>
+                    <p id="win-desc" style="font-size: 1.1rem; margin: 15px 0 25px;"></p>
+                    <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                        <button id="btn-play-again" class="pixel-btn primary" data-i18n="game_btn_play_again">🔄 再玩一局</button>
+                        <button type="button" class="pixel-btn sm nav-btn" data-target="sec-home" data-i18n="btn_back">返回主選單</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-actions" style="margin-top: 25px;">
+                <button type="button" class="pixel-btn sm nav-btn" data-target="sec-home" data-i18n="btn_back">返回主選單</button>
             </div>
         </section>
 

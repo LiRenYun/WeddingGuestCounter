@@ -612,3 +612,280 @@ button, input, select, label, .pixel-btn {
     .photo-item.active { width: 140px; height: 140px; translateY(-5px); }
     .modal-content-wrapper { border: 3px solid #fff; max-width: 95%; }
 }
+
+/* ================= 🎮 戀愛PK大作戰 遊戲樣式 ================= */
+#sec-game {
+    position: relative;
+    max-width: 860px;
+    margin: 0 auto;
+}
+
+/* 遊戲 HUD 狀態列 */
+.game-hud {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fff8fb;
+    border: 4px solid var(--border-color);
+    padding: 10px 15px;
+    margin-bottom: 12px;
+    box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+}
+
+.hud-player {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.hud-cupid .player-name {
+    color: #ff4757;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.hud-yuelao .player-name {
+    color: #e84118;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.hp-bar {
+    display: flex;
+    gap: 4px;
+    background: #ffeaa7;
+    border: 2px solid var(--border-color);
+    padding: 3px 6px;
+    border-radius: 4px;
+    min-height: 32px;
+    align-items: center;
+}
+
+.hp-item {
+    font-size: 18px;
+    transition: transform 0.2s, opacity 0.3s;
+    user-select: none;
+}
+
+.hp-item.lost {
+    opacity: 0.15;
+    filter: grayscale(100%);
+    transform: scale(0.8);
+}
+
+.hud-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.turn-badge {
+    background: #ff6b81;
+    color: white;
+    padding: 4px 12px;
+    font-size: 0.95rem;
+    font-weight: bold;
+    border: 2px solid var(--border-color);
+    box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.15);
+    animation: turnPulse 1.5s infinite alternate;
+}
+
+@keyframes turnPulse {
+    0% { transform: scale(1); }
+    100% { transform: scale(1.05); }
+}
+
+.wind-box {
+    background: #e0f7fa;
+    border: 2px solid #00acc1;
+    color: #006064;
+    padding: 3px 10px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* 畫布容器 */
+.canvas-wrapper {
+    position: relative;
+    width: 100%;
+    border: 4px solid var(--border-color);
+    background: #0f1423;
+    box-shadow: 6px 6px 0px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+    line-height: 0;
+    touch-action: none;
+}
+
+#game-canvas {
+    width: 100%;
+    height: auto;
+    display: block;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    cursor: crosshair;
+}
+
+.game-toast {
+    position: absolute;
+    top: 35%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.85);
+    color: #ffd166;
+    border: 3px solid #ff6b81;
+    padding: 10px 24px;
+    font-size: 1.3rem;
+    font-weight: bold;
+    pointer-events: none;
+    z-index: 20;
+    animation: toastPop 0.8s ease-out forwards;
+    white-space: nowrap;
+    text-shadow: 2px 2px 0px #000;
+}
+
+@keyframes toastPop {
+    0% { transform: translate(-50%, -40%) scale(0.6); opacity: 0; }
+    30% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+    80% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    100% { transform: translate(-50%, -60%) scale(0.9); opacity: 0; }
+}
+
+/* 控制區域 */
+.game-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-top: 15px;
+    flex-wrap: wrap;
+}
+
+.game-action-btn {
+    font-size: 1.2rem;
+    padding: 14px 28px;
+    min-width: 220px;
+    background: #ff4757;
+    color: #fff;
+    cursor: pointer;
+    user-select: none;
+    touch-action: none;
+    -webkit-touch-callout: none;
+    transition: transform 0.1s, background-color 0.2s;
+}
+
+.game-action-btn:active,
+.game-action-btn.charging {
+    background: #ffa502 !important;
+    transform: translate(2px, 2px) scale(0.98);
+    box-shadow: 1px 1px 0px #000 !important;
+    animation: chargeGlow 0.3s infinite alternate;
+}
+
+@keyframes chargeGlow {
+    0% { box-shadow: 0 0 5px #ff4757; }
+    100% { box-shadow: 0 0 18px #ffa502; }
+}
+
+/* 遊戲彈窗 */
+.game-modal {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    padding: 15px;
+    box-sizing: border-box;
+}
+
+.game-modal.hidden {
+    display: none !important;
+}
+
+.game-modal-content {
+    background: #fffefb;
+    border: 5px solid var(--border-color);
+    box-shadow: 8px 8px 0px rgba(0, 0, 0, 0.4);
+    padding: 25px 30px;
+    max-width: 480px;
+    width: 90%;
+    text-align: center;
+}
+
+.modal-section {
+    margin: 15px 0;
+    text-align: left;
+}
+
+.modal-label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 8px;
+    color: #2f3542;
+}
+
+.radio-group-game {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: #f1f2f6;
+    padding: 10px 14px;
+    border: 2px solid var(--border-color);
+}
+
+.radio-group-game label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 0.95rem;
+}
+
+.win-box {
+    animation: winCardPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes winCardPop {
+    0% { transform: scale(0.5); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+@media (max-width: 600px) {
+    .game-hud {
+        padding: 6px 8px;
+    }
+    .hud-player .player-name {
+        font-size: 0.95rem;
+    }
+    .hp-bar {
+        padding: 2px 4px;
+        min-height: 26px;
+    }
+    .hp-item {
+        font-size: 14px;
+    }
+    .turn-badge {
+        font-size: 0.8rem;
+        padding: 3px 8px;
+    }
+    .wind-box {
+        font-size: 0.75rem;
+        padding: 2px 6px;
+    }
+    .game-action-btn {
+        font-size: 1rem;
+        padding: 12px 20px;
+        min-width: 180px;
+    }
+}

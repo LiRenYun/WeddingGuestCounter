@@ -2,8 +2,8 @@
  * 📷 婚紗特集照片清單 (預設雲端測試照片)
  * 💡 清空下方陣列即可測試「🚧 功能開發中」提示。
  */
-
-const weddingPhotos = ["img/p1.jpg","img/p2.jpg","img/p3.jpg","img/p4.jpg","img/p5.jpg","img/p6.jpg","img/p7.jpg"]; 
+//"img/p1.jpg","img/p2.jpg","img/p3.jpg","img/p4.jpg","img/p5.jpg","img/p6.jpg","img/p7.jpg"
+const weddingPhotos = []; 
 
 // ================= 1. 多國語系字典 (i18n) =================
 const translations = {
@@ -13,7 +13,7 @@ const translations = {
         "btn_rsvp": "📝 報名參加",
         "btn_info": "🗺️ 婚宴資訊",
         "btn_wishes": "💌 想對新人說的話",
-        "btn_photos": "📷 婚紗特集",
+        "btn_photos": "📷 婚紗特集🚧",
         "title_rsvp": "📝 報名參加",
         "title_info": "🗺️ 婚宴資訊",
         "title_wishes": "💌 留言祝福",
@@ -25,13 +25,13 @@ const translations = {
         "info_date_label": "📅 日期:",
         "info_date": "2026/11/29 (日)",
         "info_time_label": "⏰ 時間:",
-        "info_time": "12:00 AM 進場",
+        "info_time": "11:30~12:00 入場 | 12:00 開席",
         "info_venue_label": "📍 地點:",
         "info_venue": "玄饌海鮮宴會館",
         "info_map_link": "📍 開啟 Google Maps",
         "info_transport": "🚗 交通方式",
-        "info_hsr": "🚄 高鐵：台南站下車，轉計程車約20-30分",
-        "info_tra": "🚆 台鐵：台南火車站，轉計程車約15分",
+        "info_hsr": "🚄 高鐵：台南站下車，轉計程車約40分",
+        "info_tra": "🚆 台鐵：台南火車站，轉計程車約25分",
         "info_parking": "🅿️ 停車場配置圖",
         "label_wish_name": "你是誰 (姓名/暱稱)",
         "placeholder_wish_name": "請輸入您的名字",
@@ -46,7 +46,7 @@ const translations = {
         "btn_rsvp": "📝 出席の返信",
         "btn_info": "🗺️ 結婚式の案内",
         "btn_wishes": "💌 お祝いのメッセージ",
-        "btn_photos": "📷 フォトアルバム",
+        "btn_photos": "📷 フォトアルバム🚧",
         "title_rsvp": "📝 出席の返信",
         "title_info": "🗺️ 結婚式の案内",
         "title_wishes": "💌 お祝いメッセージ",
@@ -58,13 +58,13 @@ const translations = {
         "info_date_label": "📅 日付:",
         "info_date": "2026年11月29日 (日曜日)",
         "info_time_label": "⏰ 時間:",
-        "info_time": "午前12時 入場",
+        "info_time": "11:30~12:00 受付 | 12:00 開宴",
         "info_venue_label": "📍 会場:",
         "info_venue": "玄饌海鮮宴會館",
         "info_map_link": "📍 Google Mapsを開く",
         "info_transport": "🚗 アクセス",
-        "info_hsr": "🚄 高鉄：台南駅下車、タクシーで約20-30分",
-        "info_tra": "🚆 台鉄：台南駅下車、タクシーで約15分",
+        "info_hsr": "🚄 高鉄：台南駅下車、タクシーで約40分",
+        "info_tra": "🚆 台鉄：台南駅下車、タクシーで約25分",
         "info_parking": "🅿️ 駐車場マップ",
         "label_wish_name": "お名前（ニックネーム）",
         "placeholder_wish_name": "お名前を入力してください",

@@ -66,7 +66,7 @@
                     </div>
 
                     <div class="form-group">
-                        <label data-i18n="label_pax">參與人數</label>
+                        <label data-i18n="label_pax">參與人數(含孩童)</label>
                         <input type="number" id="rsvp-pax" class="pixel-input" min="1" value="1" required>
                     </div>
 
@@ -122,7 +122,8 @@
             <div class="info-content">
                 <p><strong data-i18n="info_date_label">📅 日期:</strong> <span data-i18n="info_date">2026/11/29 (日)</span>
                 </p>
-                <p><strong data-i18n="info_time_label">⏰ 時間:</strong> <span data-i18n="info_time">12:00 AM 進場</span></p>
+                <p><strong data-i18n="info_time_label">⏰ 時間:</strong> <span data-i18n="info_time">11:30~12:00 入場 | 12:00
+                        開席</span></p>
                 <p><strong data-i18n="info_venue_label">📍 地點:</strong> <span data-i18n="info_venue">玄饌海鮮宴會館</span></p>
                 <p style="margin-top: 10px;">
                     <a href="https://maps.app.goo.gl/qjqtVKAnW3CYJFKL6" target="_blank" class="pixel-btn sm"
@@ -177,27 +178,28 @@
 
         <section id="sec-photos" class="view-section hidden">
             <h2 data-i18n="title_photos">📷 婚紗特集</h2>
-            
+
             <div id="carousel-wrapper" class="carousel-wrapper">
                 <div class="carousel-container" id="carousel-touch-zone">
                     <div id="photos-container" class="carousel-track"></div>
                 </div>
             </div>
-            
+
             <div id="photos-empty-msg" class="pixel-box alert-box hidden">
                 <p data-i18n="photos_coming_soon">🚧 功能開發中，敬請期待！</p>
             </div>
 
             <div class="form-actions" style="margin-top: 40px;">
-                <button type="button" class="pixel-btn sm nav-btn" data-target="sec-home" data-i18n="btn_back">返回主選單</button>
+                <button type="button" class="pixel-btn sm nav-btn" data-target="sec-home"
+                    data-i18n="btn_back">返回主選單</button>
             </div>
         </section>
 
         <div id="image-modal" class="modal hidden">
             <div class="modal-backdrop" id="modal-backdrop"></div>
-            
+
             <span id="close-modal" class="close-btn">&times;</span>
-            
+
             <div class="modal-content-wrapper" id="modal-touch-zone">
                 <img id="enlarged-img" src="" alt="Enlarged Image">
             </div>

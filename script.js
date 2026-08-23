@@ -10,6 +10,7 @@ const translations = {
     "zh": {
         "title": "💍 仁雲&銳芝💌我們的婚禮 💍",
         "subtitle": "2026.11.29 歡迎來到新手村",
+        "btn_lang": "切換至 日本語 🇯🇵",
         "btn_rsvp": "📝 報名參加",
         "btn_info": "🗺️ 婚宴資訊",
         "btn_wishes": "💌 想對新人說的話",
@@ -19,9 +20,28 @@ const translations = {
         "title_wishes": "💌 留言祝福",
         "title_photos": "📷 婚紗特集",
         "btn_back": "返回主選單",
-        "btn_submit": "確認送出",
+        "btn_next": "下一步 ➡️",
+        "btn_prev": "⬅️ 上一步",
+        "btn_submit": "確認送出 💖",
+        "btn_submitting": "⏳ 送出中...",
+        "label_side": "您是哪一方的親友？",
         "side_groom": "男方",
         "side_bride": "女方",
+        "alert_select_side": "請先選擇您是哪一方的親友喔！",
+        "label_name": "姓名",
+        "placeholder_rsvp_name": "請輸入您的姓名",
+        "label_pax": "參與人數(含孩童)",
+        "label_diet": "葷素選擇",
+        "diet_meat": "🥩 葷食",
+        "diet_veg": "🥗 素食",
+        "diet_multiple_meat": "🥩 葷食:",
+        "diet_multiple_veg": "🥗 素食:",
+        "unit_people": "人",
+        "diet_error": "⚠️ 葷食與素食人數總和必須等於參與總人數！",
+        "label_child": "兒童座椅數量",
+        "placeholder_rsvp_child": "不需要請填 0",
+        "label_note": "備註/祝福",
+        "placeholder_rsvp_message": "有什麼特別需求或想說的話嗎？",
         "info_date_label": "📅 日期:",
         "info_date": "2026/11/29 (日)",
         "info_time_label": "⏰ 時間:",
@@ -37,12 +57,16 @@ const translations = {
         "placeholder_wish_name": "請輸入您的名字",
         "label_wish_message": "祝福的話語",
         "placeholder_wish_message": "在這裡寫下對仁雲&銳芝的祝福吧...",
-        "btn_send_wish": "送出祝福",
-        "photos_coming_soon": "🚧 功能開發中，敬請期待！"
+        "btn_send_wish": "送出祝福 💌",
+        "photos_coming_soon": "🚧 功能開發中，敬請期待！",
+        "success_title": "🎉 報名成功！",
+        "success_desc": "感謝您的回覆，期待在婚禮上見到您！",
+        "btn_success_ok": "確認並回首頁"
     },
     "ja": {
         "title": "💍 仁雲&銳芝💌私たちの結婚式 💍",
         "subtitle": "2026.11.29 始まりの村へようこそ",
+        "btn_lang": "繁體中文へ切替 🇹🇼",
         "btn_rsvp": "📝 出席の返信",
         "btn_info": "🗺️ 結婚式の案内",
         "btn_wishes": "💌 お祝いのメッセージ",
@@ -51,10 +75,29 @@ const translations = {
         "title_info": "🗺️ 結婚式の案内",
         "title_wishes": "💌 お祝いメッセージ",
         "title_photos": "📷 フォトアルバム",
-        "btn_back": "戻る",
-        "btn_submit": "送信する",
+        "btn_back": "トップへ戻る",
+        "btn_next": "次へ ➡️",
+        "btn_prev": "⬅️ 前へ",
+        "btn_submit": "送信する 💖",
+        "btn_submitting": "⏳ 送信中...",
+        "label_side": "どちら側の親族・ご友人ですか？",
         "side_groom": "新郎側",
         "side_bride": "新婦側",
+        "alert_select_side": "どちら側の親族・ご友人か選択してください。",
+        "label_name": "お名前",
+        "placeholder_rsvp_name": "お名前を入力してください",
+        "label_pax": "参加人数（お子様を含む）",
+        "label_diet": "お食事の希望",
+        "diet_meat": "🥩 お肉料理",
+        "diet_veg": "🥗 ベジタリアン",
+        "diet_multiple_meat": "🥩 お肉:",
+        "diet_multiple_veg": "🥗 ベジ:",
+        "unit_people": "名",
+        "diet_error": "⚠️ お肉とベジタリアンの合計人数が参加人数と一致していません！",
+        "label_child": "チャイルドシートの数",
+        "placeholder_rsvp_child": "不要な場合は 0 と入力",
+        "label_note": "備考・メッセージ",
+        "placeholder_rsvp_message": "特別なご要望やメッセージがあればご記入ください...",
         "info_date_label": "📅 日付:",
         "info_date": "2026年11月29日 (日曜日)",
         "info_time_label": "⏰ 時間:",
@@ -70,23 +113,49 @@ const translations = {
         "placeholder_wish_name": "お名前を入力してください",
         "label_wish_message": "お祝いのメッセージ",
         "placeholder_wish_message": "ここに仁雲＆銳芝への祝福の言葉を書いてください...",
-        "btn_send_wish": "お祝いを送る",
-        "photos_coming_soon": "🚧 現在開発中、お楽しみに！"
+        "btn_send_wish": "お祝いを送る 💌",
+        "photos_coming_soon": "🚧 現在開発中、お楽しみに！",
+        "success_title": "🎉 ご返信ありがとうございます！",
+        "success_desc": "ご返信を受け付けました。当日お会いできるのを楽しみにしています！",
+        "btn_success_ok": "トップページへ戻る"
     }
 };
 
 // ================= 2. 語系與頁面切換核心邏輯 =================
 let currentLang = 'zh';
+try {
+    const savedLang = localStorage.getItem('wedding_lang');
+    if (savedLang && (savedLang === 'zh' || savedLang === 'ja')) {
+        currentLang = savedLang;
+    }
+} catch (e) {
+    console.warn('localStorage is not accessible', e);
+}
 
 function updateLanguage() {
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
-        if (translations[currentLang][key]) el.innerText = translations[currentLang][key];
+        if (translations[currentLang] && translations[currentLang][key]) {
+            el.innerText = translations[currentLang][key];
+        }
     });
     document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
         const key = el.getAttribute('data-i18n-placeholder');
-        if (translations[currentLang][key]) el.setAttribute('placeholder', translations[currentLang][key]);
+        if (translations[currentLang] && translations[currentLang][key]) {
+            el.setAttribute('placeholder', translations[currentLang][key]);
+        }
     });
+
+    const langBtn = document.getElementById('btn-lang');
+    if (langBtn && translations[currentLang] && translations[currentLang]['btn_lang']) {
+        langBtn.innerText = translations[currentLang]['btn_lang'];
+    }
+
+    try {
+        localStorage.setItem('wedding_lang', currentLang);
+    } catch (e) {
+        console.warn('localStorage is not accessible', e);
+    }
 }
 
 const langBtn = document.getElementById('btn-lang');
@@ -135,7 +204,9 @@ if (btnNextStep) {
     btnNextStep.addEventListener('click', () => {
         const sideChecked = document.querySelector('input[name="side"]:checked');
         if (!sideChecked) {
-            alert(currentLang === 'zh' ? "請先選擇您是哪一方的親友喔！" : "どちらの親族か選択してください。");
+            const alertMsg = translations[currentLang]?.alert_select_side || 
+                (currentLang === 'zh' ? "請先選擇您是哪一方的親友喔！" : "どちら側の親族・ご友人か選択してください。");
+            alert(alertMsg);
             return;
         }
         document.getElementById('rsvp-step-1').classList.add('hidden');
@@ -552,7 +623,7 @@ function handleFormSubmit(formId, formType, getPayload) {
         if (!btn) return;
         btn.disabled = true;
         const oldText = btn.innerText;
-        btn.innerText = "⏳...";
+        btn.innerText = translations[currentLang]?.btn_submitting || "⏳...";
 
         fetch(API_URL, {
             method: 'POST',

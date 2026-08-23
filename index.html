@@ -62,7 +62,8 @@
                 <div id="rsvp-step-2" class="hidden">
                     <div class="form-group">
                         <label data-i18n="label_name">姓名</label>
-                        <input type="text" id="rsvp-name" class="pixel-input" required>
+                        <input type="text" id="rsvp-name" class="pixel-input"
+                            data-i18n-placeholder="placeholder_rsvp_name" placeholder="請輸入您的姓名" required>
                     </div>
 
                     <div class="form-group">
@@ -74,23 +75,25 @@
                         <label data-i18n="label_diet">葷素選擇</label>
 
                         <div id="diet-single" class="radio-group">
-                            <label><input type="radio" name="diet" value="葷食" checked> 🥩 葷食</label>
-                            <label><input type="radio" name="diet" value="素食"> 🥗 素食</label>
+                            <label><input type="radio" name="diet" value="葷食" checked> <span
+                                    data-i18n="diet_meat">🥩 葷食</span></label>
+                            <label><input type="radio" name="diet" value="素食"> <span
+                                    data-i18n="diet_veg">🥗 素食</span></label>
                         </div>
 
                         <div id="diet-multiple" class="hidden">
                             <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                                <label style="width: 80px; margin: 0;">🥩 葷食:</label>
+                                <label style="width: 90px; margin: 0;" data-i18n="diet_multiple_meat">🥩 葷食:</label>
                                 <input type="number" id="diet-meat" class="pixel-input" min="0" value="1"
-                                    style="width: 80px;"> 人
+                                    style="width: 80px;"> <span data-i18n="unit_people">人</span>
                             </div>
                             <div style="display: flex; align-items: center; gap: 10px;">
-                                <label style="width: 80px; margin: 0;">🥗 素食:</label>
+                                <label style="width: 90px; margin: 0;" data-i18n="diet_multiple_veg">🥗 素食:</label>
                                 <input type="number" id="diet-veg" class="pixel-input" min="0" value="0"
-                                    style="width: 80px;"> 人
+                                    style="width: 80px;"> <span data-i18n="unit_people">人</span>
                             </div>
                             <div id="diet-error" class="hidden"
-                                style="color: #ff6b81; font-size: 0.85rem; margin-top: 5px;">
+                                style="color: #ff6b81; font-size: 0.85rem; margin-top: 5px;" data-i18n="diet_error">
                                 ⚠️ 葷食與素食人數總和必須等於參與總人數！
                             </div>
                         </div>
@@ -99,12 +102,13 @@
                     <div class="form-group">
                         <label data-i18n="label_child">兒童座椅數量</label>
                         <input type="number" id="rsvp-child" class="pixel-input" min="0" value="0"
-                            placeholder="不需要請填 0">
+                            data-i18n-placeholder="placeholder_rsvp_child" placeholder="不需要請填 0">
                     </div>
 
                     <div class="form-group">
                         <label data-i18n="label_note">備註/祝福</label>
                         <textarea id="rsvp-message" rows="2" class="pixel-input"
+                            data-i18n-placeholder="placeholder_rsvp_message"
                             placeholder="有什麼特別需求或想說的話嗎？"></textarea>
                     </div>
                     <div class="form-actions">
@@ -134,8 +138,8 @@
                 <div class="pixel-box">
                     <h3 data-i18n="info_transport">🚗 交通方式</h3>
                     <ul>
-                        <li data-i18n="info_hsr">🚄 高鐵：台南站下車，轉計程車約20-30分</li>
-                        <li data-i18n="info_tra">🚆 台鐵：台南火車站，轉計程車約15分</li>
+                        <li data-i18n="info_hsr">🚄 高鐵：台南站下車，轉計程車約40分</li>
+                        <li data-i18n="info_tra">🚆 台鐵：台南火車站，轉計程車約25分</li>
                     </ul>
                 </div>
 
@@ -207,18 +211,11 @@
 
     </main>
 
-    <div id="image-modal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <div id="close-modal" class="modal-close">X</div>
-            <img id="enlarged-img" src="" alt="Enlarged Map">
-        </div>
-    </div>
-
     <div id="success-modal" class="modal-overlay hidden">
         <div class="modal-content" style="text-align: center; padding: 40px 30px;">
-            <h2 style="color: #ff6b81; margin-bottom: 15px; font-size: 2rem;">🎉 報名成功！</h2>
-            <p style="margin-bottom: 25px; font-size: 1.2rem;">感謝您的回覆，期待在婚禮上見到您！</p>
-            <button id="btn-success-ok" class="pixel-btn primary">確認並回首頁</button>
+            <h2 style="color: #ff6b81; margin-bottom: 15px; font-size: 2rem;" data-i18n="success_title">🎉 報名成功！</h2>
+            <p style="margin-bottom: 25px; font-size: 1.2rem;" data-i18n="success_desc">感謝您的回覆，期待在婚禮上見到您！</p>
+            <button id="btn-success-ok" class="pixel-btn primary" data-i18n="btn_success_ok">確認並回首頁</button>
         </div>
     </div>
 

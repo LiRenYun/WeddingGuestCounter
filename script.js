@@ -25,7 +25,7 @@ const translations = {
         "info_date_label": "📅 日期:",
         "info_date": "2026/11/29 (日)",
         "info_time_label": "⏰ 時間:",
-        "info_time": "11:00 AM 進場",
+        "info_time": "12:00 AM 進場",
         "info_venue_label": "📍 地點:",
         "info_venue": "玄饌海鮮宴會館",
         "info_map_link": "📍 開啟 Google Maps",
@@ -58,7 +58,7 @@ const translations = {
         "info_date_label": "📅 日付:",
         "info_date": "2026年11月29日 (日曜日)",
         "info_time_label": "⏰ 時間:",
-        "info_time": "午前11時 入場",
+        "info_time": "午前12時 入場",
         "info_venue_label": "📍 会場:",
         "info_venue": "玄饌海鮮宴會館",
         "info_map_link": "📍 Google Mapsを開く",
@@ -152,7 +152,7 @@ if (btnPrevStep) {
 }
 
 
-// ================= 4. 🚀【完整防禦修復】：人數防護（Defense機制） =================
+// ================= 4. 人數防護（Defense機制） =================
 const rsvpPax = document.getElementById('rsvp-pax');
 const dietSingle = document.getElementById('diet-single');
 const dietMultiple = document.getElementById('diet-multiple');
@@ -161,23 +161,19 @@ const dietVeg = document.getElementById('diet-veg');
 
 if (rsvpPax) {
     rsvpPax.addEventListener('input', () => {
-        // Defense 1: 防止輸入負數、0 或非數字，低於 1 強制歸 1
         let total = parseInt(rsvpPax.value);
         if (isNaN(total) || total < 1) {
             total = 1;
             rsvpPax.value = 1;
         }
-        // Defense 2: 設定合理上限值（例如最多 99 人），防惡意輸入
         if (total > 99) {
             total = 99;
             rsvpPax.value = 99;
         }
 
-        // 連動葷素區塊切換
         if (total > 1) {
             if (dietSingle) dietSingle.classList.add('hidden');
             if (dietMultiple) dietMultiple.classList.remove('hidden');
-            // 預設將總人數分配給葷食
             if (dietMeat) dietMeat.value = total;
             if (dietVeg) dietVeg.value = 0;
         } else {
@@ -187,18 +183,15 @@ if (rsvpPax) {
     });
 }
 
-// Defense 3: 多人時，葷食與素食人數防呆與自動加總校正
 if (dietMeat && dietVeg && rsvpPax) {
     const handleDietDefense = (changedInput) => {
         let total = parseInt(rsvpPax.value) || 1;
         let meat = parseInt(dietMeat.value);
         let veg = parseInt(dietVeg.value);
 
-        // 防止小於 0
         if (isNaN(meat) || meat < 0) { meat = 0; dietMeat.value = 0; }
         if (isNaN(veg) || veg < 0) { veg = 0; dietVeg.value = 0; }
 
-        // 如果目前改的是葷食，自動去計算素食 = 總人數 - 葷食
         if (changedInput === 'meat') {
             if (meat > total) {
                 meat = total;
@@ -207,7 +200,6 @@ if (dietMeat && dietVeg && rsvpPax) {
             veg = total - meat;
             dietVeg.value = veg;
         } 
-        // 如果目前改的是素食，自動去計算葷食 = 總人數 - 素食
         else if (changedInput === 'veg') {
             if (veg > total) {
                 veg = total;
@@ -223,7 +215,48 @@ if (dietMeat && dietVeg && rsvpPax) {
 }
 
 
-// ================= 5. 婚紗相簿 - 浮動置中輪播與手勢核心 =================
+// ================= 5. 🚀【全新加回】：滑鼠點擊像素愛心動畫 (Click Particles) =================
+document.addEventListener('click', (e) => {
+    // 如果點擊的是按鈕或輸入框，依然會觸發動畫
+    const particleCount = 60; // 每次點擊噴出的粒子數量
+    
+    for (let i = 0; i < particleCount; i++) {
+        const p = document.createElement('div');
+        p.className = 'pixel-confetti';
+        
+        // 隨機決定是愛心還是小方塊
+        const symbols = ['💖', '▪', '⭐', '✨', '🌸', '💎', '❤️', '🔥'];
+        p.innerText = symbols[Math.floor(Math.random() * symbols.length)];
+        //p.innerText = Math.random() > 0.4 ? '💖' : '▪';
+        
+        // 定位在滑鼠游標的位置
+        p.style.left = `${e.clientX}px`;
+        p.style.top = `${e.clientY}px`;
+        p.style.position = 'fixed';
+        p.style.fontSize = Math.random() > 0.5 ? '14px' : '10px';
+        p.style.zIndex = '99999';
+        p.style.pointerEvents = 'none';
+        
+        // 隨機計算爆炸散射的角度與力道 (CSS 動畫變數)
+        const angle = Math.random() * Math.PI * 2;
+        const velocity = 100 + Math.random() * 200;
+        const dx = Math.cos(angle) * velocity;
+        const dy = Math.sin(angle) * velocity - 50; // 稍微帶有一點往上飄的效果
+        const dr = (Math.random() - 0.5) * 360; // 旋轉角度
+        
+        p.style.setProperty('--dx', `${dx}px`);
+        p.style.setProperty('--dy', `${dy}px`);
+        p.style.setProperty('--dr', `${dr}deg`);
+        
+        document.body.appendChild(p);
+        
+        // 動態結束後自動將物件銷毀，防止佔用記憶體
+        p.addEventListener('animationend', () => p.remove());
+    }
+});
+
+
+// ================= 6. 婚紗相簿 - 浮動置中輪播與手勢核心 =================
 let currentPhotoIndex = 0; 
 let isDragMoving = false; 
 
@@ -365,7 +398,7 @@ function addDragInteractionToCarousel() {
     touchZone.addEventListener('touchend', endDrag);
 }
 
-// ================= 6. 大畫面燈箱 (Lightbox Slider) =================
+// ================= 7. 大畫面燈箱 (Lightbox Slider) =================
 const imageModal = document.getElementById('image-modal');
 const enlargedImg = document.getElementById('enlarged-img');
 const closeModal = document.getElementById('close-modal');
@@ -398,7 +431,7 @@ function addSwipeInteractionToModal() {
         if (currentModalX === undefined) return;
         
         const diffX = currentModalX - startModalX;
-        modalTouchZone.style.transform = `translateX(${diffX}px)`.tr; 
+        modalTouchZone.style.transform = `translateX(${diffX}px)`; 
     };
 
     const endModalDrag = (e) => {
@@ -463,7 +496,7 @@ function switchLightboxPhoto(dir) {
     if (enlargedImg) enlargedImg.src = weddingPhotos[currentPhotoIndex];
 }
 
-// ================= 7. 其他表單功能與對接 =================
+// ================= 8. 其他表單功能與對接 =================
 const mapImg = document.getElementById('parking-map-img');
 if (mapImg) {
     mapImg.addEventListener('click', () => {

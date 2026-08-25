@@ -292,15 +292,58 @@ const dietSingle = document.getElementById('diet-single');
 const dietMultiple = document.getElementById('diet-multiple');
 const dietMeat = document.getElementById('diet-meat');
 const dietVeg = document.getElementById('diet-veg');
+const dietError = document.getElementById('diet-error');
+const rsvpChild = document.getElementById('rsvp-child');
+
+function updateDietErrorState() {
+    if (!rsvpPax || !dietMeat || !dietVeg || !dietError) return;
+    const total = parseInt(rsvpPax.value);
+    if (!isNaN(total) && total > 1) {
+        const meat = parseInt(dietMeat.value) || 0;
+        const veg = parseInt(dietVeg.value) || 0;
+        if (meat + veg !== total) {
+            dietError.classList.remove('hidden');
+        } else {
+            dietError.classList.add('hidden');
+        }
+    } else {
+        dietError.classList.add('hidden');
+    }
+}
 
 if (rsvpPax) {
     rsvpPax.addEventListener('input', () => {
+        const rawVal = rsvpPax.value.trim();
+        if (rawVal === '') {
+            updateDietErrorState();
+            return;
+        }
+
+        const total = parseInt(rawVal);
+        if (!isNaN(total)) {
+            if (total > 1) {
+                if (dietSingle) dietSingle.classList.add('hidden');
+                if (dietMultiple) dietMultiple.classList.remove('hidden');
+                const meat = parseInt(dietMeat?.value);
+                const veg = parseInt(dietVeg?.value);
+                if ((isNaN(meat) && isNaN(veg)) || (meat === 0 && veg === 0)) {
+                    if (dietMeat) dietMeat.value = total;
+                    if (dietVeg) dietVeg.value = 0;
+                }
+            } else {
+                if (dietSingle) dietSingle.classList.remove('hidden');
+                if (dietMultiple) dietMultiple.classList.add('hidden');
+            }
+        }
+        updateDietErrorState();
+    });
+
+    rsvpPax.addEventListener('blur', () => {
         let total = parseInt(rsvpPax.value);
         if (isNaN(total) || total < 1) {
             total = 1;
             rsvpPax.value = 1;
-        }
-        if (total > 99) {
+        } else if (total > 99) {
             total = 99;
             rsvpPax.value = 99;
         }
@@ -308,44 +351,53 @@ if (rsvpPax) {
         if (total > 1) {
             if (dietSingle) dietSingle.classList.add('hidden');
             if (dietMultiple) dietMultiple.classList.remove('hidden');
-            if (dietMeat) dietMeat.value = total;
-            if (dietVeg) dietVeg.value = 0;
+            if (dietMeat && (dietMeat.value === '' || isNaN(parseInt(dietMeat.value)))) {
+                dietMeat.value = total;
+            }
+            if (dietVeg && (dietVeg.value === '' || isNaN(parseInt(dietVeg.value)))) {
+                dietVeg.value = 0;
+            }
         } else {
             if (dietSingle) dietSingle.classList.remove('hidden');
             if (dietMultiple) dietMultiple.classList.add('hidden');
         }
+        updateDietErrorState();
     });
 }
 
-if (dietMeat && dietVeg && rsvpPax) {
-    const handleDietDefense = (changedInput) => {
-        let total = parseInt(rsvpPax.value) || 1;
-        let meat = parseInt(dietMeat.value);
-        let veg = parseInt(dietVeg.value);
-
-        if (isNaN(meat) || meat < 0) { meat = 0; dietMeat.value = 0; }
-        if (isNaN(veg) || veg < 0) { veg = 0; dietVeg.value = 0; }
-
-        if (changedInput === 'meat') {
-            if (meat > total) {
-                meat = total;
-                dietMeat.value = total;
-            }
-            veg = total - meat;
-            dietVeg.value = veg;
-        } 
-        else if (changedInput === 'veg') {
-            if (veg > total) {
-                veg = total;
-                dietVeg.value = total;
-            }
-            meat = total - veg;
-            dietMeat.value = meat;
+if (dietMeat) {
+    dietMeat.addEventListener('input', () => {
+        updateDietErrorState();
+    });
+    dietMeat.addEventListener('blur', () => {
+        let val = parseInt(dietMeat.value);
+        if (isNaN(val) || val < 0) {
+            dietMeat.value = 0;
         }
-    };
+        updateDietErrorState();
+    });
+}
 
-    dietMeat.addEventListener('input', () => handleDietDefense('meat'));
-    dietVeg.addEventListener('input', () => handleDietDefense('veg'));
+if (dietVeg) {
+    dietVeg.addEventListener('input', () => {
+        updateDietErrorState();
+    });
+    dietVeg.addEventListener('blur', () => {
+        let val = parseInt(dietVeg.value);
+        if (isNaN(val) || val < 0) {
+            dietVeg.value = 0;
+        }
+        updateDietErrorState();
+    });
+}
+
+if (rsvpChild) {
+    rsvpChild.addEventListener('blur', () => {
+        let val = parseInt(rsvpChild.value);
+        if (isNaN(val) || val < 0) {
+            rsvpChild.value = 0;
+        }
+    });
 }
 
 
@@ -677,11 +729,17 @@ if (wishMessage) {
 
 const API_URL = "https://script.google.com/macros/s/AKfycbzKsZ90yBKYSlTADzaVt6PLin9tevzgnTaskNF06jNWr6G63vX8k_GEu64gx275eTrumA/exec";
 
-function handleFormSubmit(formId, formType, getPayload) {
+function handleFormSubmit(formId, formType, getPayload, validateFn) {
     const form = document.getElementById(formId);
     if (!form) return;
     form.addEventListener('submit', (e) => {
         e.preventDefault();
+
+        // 執行送出前驗證防護
+        if (typeof validateFn === 'function' && !validateFn()) {
+            return;
+        }
+
         const btn = form.querySelector('button[type="submit"]');
         if (!btn) return;
         btn.disabled = true;
@@ -696,6 +754,18 @@ function handleFormSubmit(formId, formType, getPayload) {
             const successModal = document.getElementById('success-modal');
             if (successModal) successModal.classList.remove('hidden');
             form.reset();
+
+            // 重置 RSVP 表單各欄位與步驟狀態
+            if (formId === 'form-rsvp') {
+                if (dietSingle) dietSingle.classList.remove('hidden');
+                if (dietMultiple) dietMultiple.classList.add('hidden');
+                if (dietError) dietError.classList.add('hidden');
+                if (rsvpPax) rsvpPax.value = 1;
+                if (dietMeat) dietMeat.value = 1;
+                if (dietVeg) dietVeg.value = 0;
+                if (rsvpChild) rsvpChild.value = 0;
+                resetRsvpSteps();
+            }
         }).finally(() => {
             btn.disabled = false;
             btn.innerText = oldText;
@@ -703,14 +773,40 @@ function handleFormSubmit(formId, formType, getPayload) {
     });
 }
 
-handleFormSubmit('form-rsvp', 'rsvp', () => ({
-    name: document.getElementById('rsvp-name')?.value || "未填",
-    side: document.querySelector('input[name="side"]:checked')?.value || "未填",
-    pax: rsvpPax ? (parseInt(rsvpPax.value) || 1) : 1,
-    diet: rsvpPax && parseInt(rsvpPax.value) > 1 ? `葷:${dietMeat.value},素:${dietVeg.value}` : (document.querySelector('input[name="diet"]:checked')?.value || "葷"),
-    childSeat: document.getElementById('rsvp-child')?.value || 0,
-    message: document.getElementById('rsvp-message')?.value || ""
-}));
+function validateRsvpForm() {
+    const totalPax = parseInt(rsvpPax?.value) || 1;
+    if (totalPax > 1) {
+        const meat = parseInt(dietMeat?.value) || 0;
+        const veg = parseInt(dietVeg?.value) || 0;
+        if (meat + veg !== totalPax) {
+            if (dietError) dietError.classList.remove('hidden');
+            const errorMsg = translations[currentLang]?.diet_error || 
+                (currentLang === 'zh' ? "⚠️ 葷食與素食人數總和必須等於參與總人數！" : "⚠️ お肉とベジタリアンの合計人数が参加人数と一致していません！");
+            alert(errorMsg);
+            if (dietMeat) dietMeat.focus();
+            return false;
+        }
+    }
+    return true;
+}
+
+handleFormSubmit('form-rsvp', 'rsvp', () => {
+    const totalPax = rsvpPax ? (parseInt(rsvpPax.value) || 1) : 1;
+    const meat = dietMeat ? (parseInt(dietMeat.value) || 0) : 0;
+    const veg = dietVeg ? (parseInt(dietVeg.value) || 0) : 0;
+    const dietVal = totalPax > 1 
+        ? `葷:${meat},素:${veg}` 
+        : (document.querySelector('input[name="diet"]:checked')?.value || "葷食");
+
+    return {
+        name: document.getElementById('rsvp-name')?.value || "未填",
+        side: document.querySelector('input[name="side"]:checked')?.value || "未填",
+        pax: totalPax,
+        diet: dietVal,
+        childSeat: parseInt(document.getElementById('rsvp-child')?.value) || 0,
+        message: document.getElementById('rsvp-message')?.value || ""
+    };
+}, validateRsvpForm);
 
 handleFormSubmit('form-wish', 'wish', () => ({
     name: document.getElementById('wish-name')?.value || "匿名親友",

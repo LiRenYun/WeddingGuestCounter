@@ -243,6 +243,9 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
                 if (targetId === 'sec-game') initLoveGame();
             } else {
                 document.querySelector('.game-box').classList.remove('expanded');
+                if (window.lovePKGame) {
+                    window.lovePKGame.cleanupOnLeave();
+                }
             }
 
             if (targetId === 'sec-rsvp') {
@@ -877,6 +880,9 @@ class LovePKGame {
         this.sakuraPetals = [];
         this.shakeTimer = 0;
         this.cpuTimeout = null;
+        this.turnTimeout = null;
+        this.winTimeout = null;
+        this.cpuChargeInterval = null;
         this.time = 0;
 
         this.initStars();
@@ -889,6 +895,25 @@ class LovePKGame {
         this.lastTime = performance.now();
         this.loop = this.loop.bind(this);
         requestAnimationFrame(this.loop);
+    }
+
+    clearAllTimers() {
+        if (this.cpuTimeout) {
+            clearTimeout(this.cpuTimeout);
+            this.cpuTimeout = null;
+        }
+        if (this.turnTimeout) {
+            clearTimeout(this.turnTimeout);
+            this.turnTimeout = null;
+        }
+        if (this.winTimeout) {
+            clearTimeout(this.winTimeout);
+            this.winTimeout = null;
+        }
+        if (this.cpuChargeInterval) {
+            clearInterval(this.cpuChargeInterval);
+            this.cpuChargeInterval = null;
+        }
     }
 
     initStars() {
@@ -953,30 +978,27 @@ class LovePKGame {
 
         const chargeBtn = document.getElementById('btn-game-charge');
         const handleStartCharge = (e) => {
-            if (e) e.preventDefault();
+            if (e && e.cancelable && e.type !== 'mousedown') e.preventDefault();
             this.startCharging();
         };
         const handleEndCharge = (e) => {
-            if (e) e.preventDefault();
-            this.releaseAndFire();
+            if (this.isCharging) {
+                this.releaseAndFire();
+                if (e && e.cancelable && e.type !== 'mouseup') e.preventDefault();
+            }
         };
 
         if (chargeBtn) {
             chargeBtn.addEventListener('pointerdown', handleStartCharge);
-            chargeBtn.addEventListener('touchstart', handleStartCharge, { passive: false });
-            chargeBtn.addEventListener('mousedown', handleStartCharge);
         }
 
         window.addEventListener('pointerup', handleEndCharge);
-        window.addEventListener('touchend', handleEndCharge);
-        window.addEventListener('mouseup', handleEndCharge);
         window.addEventListener('pointercancel', handleEndCharge);
 
         // Canvas 點擊/長按支援
-        this.canvas.addEventListener('pointerdown', (e) => {
-            e.preventDefault();
-            this.startCharging();
-        });
+        if (this.canvas) {
+            this.canvas.addEventListener('pointerdown', handleStartCharge);
+        }
 
         // 鍵盤空白鍵支援
         window.addEventListener('keydown', (e) => {
@@ -991,13 +1013,22 @@ class LovePKGame {
         });
         window.addEventListener('keyup', (e) => {
             if (e.code === 'Space') {
-                this.releaseAndFire();
+                if (this.isCharging) {
+                    this.releaseAndFire();
+                }
             }
         });
     }
 
     showStartModal() {
-        if (this.cpuTimeout) clearTimeout(this.cpuTimeout);
+        this.clearAllTimers();
+        this.isCharging = false;
+        if (this.state === 'charging') this.state = 'idle';
+        const chargeBtn = document.getElementById('btn-game-charge');
+        if (chargeBtn) {
+            chargeBtn.classList.remove('charging');
+            chargeBtn.innerText = translations[currentLang]?.game_btn_charge || "🎯 長按蓄力發射";
+        }
         const startModal = document.getElementById('game-start-modal');
         if (startModal) startModal.classList.remove('hidden');
     }
@@ -1005,26 +1036,41 @@ class LovePKGame {
     hideStartModal() {
         const startModal = document.getElementById('game-start-modal');
         if (startModal) startModal.classList.add('hidden');
+        if (this.mode === 'cpu' && this.currentTurn === 'yuelao' && this.state === 'idle') {
+            this.clearAllTimers();
+            this.cpuTimeout = setTimeout(() => this.runCpuTurn(), 700);
+        }
     }
 
     resetGameDirectly() {
-        if (this.cpuTimeout) clearTimeout(this.cpuTimeout);
+        this.clearAllTimers();
         this.cupidHP = 5;
         this.yuelaoHP = 5;
         this.currentTurn = this.firstPlayer;
         this.projectile = null;
         this.particles = [];
         this.state = 'idle';
+        this.isCharging = false;
+        this.power = 0;
 
         this.hideStartModal();
         const winModal = document.getElementById('game-win-modal');
         if (winModal) winModal.classList.add('hidden');
+        const toast = document.getElementById('game-toast');
+        if (toast) toast.classList.add('hidden');
+
+        const chargeBtn = document.getElementById('btn-game-charge');
+        if (chargeBtn) {
+            chargeBtn.classList.remove('charging');
+            chargeBtn.innerText = translations[currentLang]?.game_btn_charge || "🎯 長按蓄力發射";
+        }
 
         this.updateHpDisplay();
         this.startNewTurn(false);
     }
 
     startGameFromModal() {
+        this.clearAllTimers();
         const modeEl = document.querySelector('input[name="game-mode"]:checked');
         const firstEl = document.querySelector('input[name="game-first"]:checked');
         this.mode = modeEl ? modeEl.value : '2p';
@@ -1041,17 +1087,27 @@ class LovePKGame {
         this.projectile = null;
         this.particles = [];
         this.state = 'idle';
+        this.isCharging = false;
+        this.power = 0;
 
         this.hideStartModal();
         const winModal = document.getElementById('game-win-modal');
         if (winModal) winModal.classList.add('hidden');
+        const toast = document.getElementById('game-toast');
+        if (toast) toast.classList.add('hidden');
+
+        const chargeBtn = document.getElementById('btn-game-charge');
+        if (chargeBtn) {
+            chargeBtn.classList.remove('charging');
+            chargeBtn.innerText = translations[currentLang]?.game_btn_charge || "🎯 長按蓄力發射";
+        }
 
         this.updateHpDisplay();
         this.startNewTurn(false);
     }
 
     startNewTurn(switchTurn = true) {
-        if (this.cpuTimeout) clearTimeout(this.cpuTimeout);
+        this.clearAllTimers();
 
         if (switchTurn) {
             this.currentTurn = this.currentTurn === 'cupid' ? 'yuelao' : 'cupid';
@@ -1080,6 +1136,13 @@ class LovePKGame {
     startCharging() {
         if (this.state !== 'idle') return;
         if (this.mode === 'cpu' && this.currentTurn === 'yuelao') return;
+        const secGame = document.getElementById('sec-game');
+        if (!secGame || secGame.classList.contains('hidden')) return;
+        const startModal = document.getElementById('game-start-modal');
+        const winModal = document.getElementById('game-win-modal');
+        if ((startModal && !startModal.classList.contains('hidden')) || (winModal && !winModal.classList.contains('hidden'))) {
+            return;
+        }
 
         this.state = 'charging';
         this.isCharging = true;
@@ -1142,16 +1205,19 @@ class LovePKGame {
         const targetPower = Math.min(100, Math.max(20, idealPower + jitter));
 
         let currentP = 0;
-        const chargeInterval = setInterval(() => {
+        if (this.cpuChargeInterval) clearInterval(this.cpuChargeInterval);
+        this.cpuChargeInterval = setInterval(() => {
             if (this.state !== 'charging') {
-                clearInterval(chargeInterval);
+                if (this.cpuChargeInterval) clearInterval(this.cpuChargeInterval);
+                this.cpuChargeInterval = null;
                 return;
             }
             currentP += 3.5;
             this.power = Math.min(targetPower, currentP);
 
             if (this.power >= targetPower) {
-                clearInterval(chargeInterval);
+                if (this.cpuChargeInterval) clearInterval(this.cpuChargeInterval);
+                this.cpuChargeInterval = null;
                 this.isCharging = false;
                 this.fireProjectile(this.power);
             }
@@ -1242,9 +1308,9 @@ class LovePKGame {
         if (this.cupidHP <= 0 || this.yuelaoHP <= 0) {
             this.state = 'gameover';
             const winner = this.cupidHP > 0 ? 'cupid' : 'yuelao';
-            setTimeout(() => this.triggerVictory(winner), 1000);
+            this.winTimeout = setTimeout(() => this.triggerVictory(winner), 1000);
         } else {
-            setTimeout(() => this.startNewTurn(true), 1100);
+            this.turnTimeout = setTimeout(() => this.startNewTurn(true), 1100);
         }
     }
 
@@ -1253,7 +1319,7 @@ class LovePKGame {
         if (this.projectile) {
             this.spawnExplosion(this.projectile.x, this.projectile.y, '✨');
         }
-        setTimeout(() => this.startNewTurn(true), 900);
+        this.turnTimeout = setTimeout(() => this.startNewTurn(true), 900);
     }
 
     onMiss() {
@@ -1261,7 +1327,7 @@ class LovePKGame {
         if (this.projectile) {
             this.spawnExplosion(this.projectile.x, Math.min(380, this.projectile.y), '▪');
         }
-        setTimeout(() => this.startNewTurn(true), 900);
+        this.turnTimeout = setTimeout(() => this.startNewTurn(true), 900);
     }
 
     spawnExplosion(x, y, symbol) {
@@ -1873,6 +1939,22 @@ class LovePKGame {
         ctx.restore();
     }
 
+    cleanupOnLeave() {
+        this.clearAllTimers();
+        this.isCharging = false;
+        if (this.state === 'charging') this.state = 'idle';
+        this.hideStartModal();
+        const winModal = document.getElementById('game-win-modal');
+        if (winModal) winModal.classList.add('hidden');
+        const toast = document.getElementById('game-toast');
+        if (toast) toast.classList.add('hidden');
+        const chargeBtn = document.getElementById('btn-game-charge');
+        if (chargeBtn) {
+            chargeBtn.classList.remove('charging');
+            chargeBtn.innerText = translations[currentLang]?.game_btn_charge || "🎯 長按蓄力發射";
+        }
+    }
+
     loop(time) {
         const dt = Math.min(50, time - this.lastTime);
         this.lastTime = time;
@@ -1892,6 +1974,13 @@ function initLoveGame() {
         window.lovePKGame = new LovePKGame();
     } else {
         window.lovePKGame.updateLanguageTexts();
+        if (window.lovePKGame.state === 'gameover') {
+            window.lovePKGame.resetGameDirectly();
+        } else {
+            window.lovePKGame.hideStartModal();
+            const winModal = document.getElementById('game-win-modal');
+            if (winModal) winModal.classList.add('hidden');
+        }
     }
 }
 

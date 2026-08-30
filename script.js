@@ -731,7 +731,7 @@ if (wishMessage) {
 }
 
 //const API_URL = "https://script.google.com/macros/s/AKfycbzKsZ90yBKYSlTADzaVt6PLin9tevzgnTaskNF06jNWr6G63vX8k_GEu64gx275eTrumA/exec"; //old version
-const API_URL = "https://script.google.com/macros/s/AKfycbwASc_K_JroKWV1HFbpHIpdjl7ZiJFt9hS4G2gZNSKpX8mYyLsBWOYRuPA-oijGf2sESQ/exec"; //new
+const API_URL = "https://script.google.com/macros/s/AKfycbxn_S06Rv8Jqi5d3lb3D7hfhD-9SH8TqlgNnsJ0YL1RCitoqdOOZ7tCk_KNMGj-c9-G2A/exec"; //new
 
 function handleFormSubmit(formId, formType, getPayload, validateFn) {
     const form = document.getElementById(formId);

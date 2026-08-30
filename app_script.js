@@ -118,14 +118,16 @@ function doPost(e) {
     // ---------------------------------------------------------------------
     } else if (formType === 'gift') {
       var sheet = getOrCreateSheet(ss, "禮金紀錄");
+      var formattedTime = formatCustomDateTime(timestamp);
 
       // 強制確保標題列正確（避免手動編輯造成欄位錯位）
+      var correctHeaders = ["姓名", "陣營", "金額", "喜餅數量", "備註/合包明細", "更新時間"];
       if (sheet.getLastRow() === 0) {
-        sheet.appendRow(["姓名", "陣營", "金額", "喜餅數量", "備註/合包明細", "更新時間"]);
+        sheet.appendRow(correctHeaders);
       } else {
         // 檢查並修正標題列
+        var maxCols = Math.max(sheet.getLastColumn(), 6);
         var headers = sheet.getRange(1, 1, 1, 6).getValues()[0];
-        var correctHeaders = ["姓名", "陣營", "金額", "喜餅數量", "備註/合包明細", "更新時間"];
         var needsUpdate = false;
         for (var i = 0; i < correctHeaders.length; i++) {
           if (headers[i] !== correctHeaders[i]) {
@@ -143,16 +145,16 @@ function doPost(e) {
         // 依「姓名+陣營」更新金額、喜餅數量、備註與更新時間；找不到則新增
         var updated = updateGiftAmount(
           sheet, data.name, data.side, data.amount,
-          Number(data.cakes) || 0, data.note || "", timestamp
+          Number(data.cakes) || 0, data.note || "", formattedTime
         );
         if (!updated) {
           sheet.appendRow([
             data.name || "",
             data.side || "",
             Number(data.amount) || 0,
-            0,
-            "",
-            timestamp
+            Number(data.cakes) || 0,
+            data.note || "",
+            formattedTime
           ]);
         }
       } else {
@@ -166,7 +168,7 @@ function doPost(e) {
           Number(data.amount) || 0,
           Number(data.cakes) || 0,
           data.note || "",
-          timestamp
+          formattedTime
         ]);
       }
 
@@ -411,7 +413,30 @@ function syncToGiftSheet(ss, name, side) {
       }
     }
   }
-  sheet.appendRow([name, side, 0, 0, "", new Date()]);
+  sheet.appendRow([name, side, 0, 0, "", formatCustomDateTime(new Date())]);
+}
+
+/**
+ * 格式化時間為「YYYY/M/D 上午/下午 h:mm:ss」
+ * 例如：2026/8/25 上午 9:18:53
+ */
+function formatCustomDateTime(date) {
+  var d = (date instanceof Date) ? date : (date ? new Date(date) : new Date());
+  if (isNaN(d.getTime())) return "";
+
+  var tz = Session.getScriptTimeZone() || "GMT+8";
+  var year = Utilities.formatDate(d, tz, "yyyy");
+  var month = parseInt(Utilities.formatDate(d, tz, "M"), 10);
+  var day = parseInt(Utilities.formatDate(d, tz, "d"), 10);
+  var hours24 = parseInt(Utilities.formatDate(d, tz, "H"), 10);
+  var minutes = Utilities.formatDate(d, tz, "mm");
+  var seconds = Utilities.formatDate(d, tz, "ss");
+
+  var ampm = hours24 < 12 ? "上午" : "下午";
+  var hour12 = hours24 % 12;
+  if (hour12 === 0) hour12 = 12;
+
+  return year + "/" + month + "/" + day + " " + ampm + " " + hour12 + ":" + minutes + ":" + seconds;
 }
 
 /**

@@ -107,15 +107,27 @@ function getFilteredAndSearchedData() {
 function updateStats() {
   const totalGuests = guestData.length;
   let totalAmount = 0;
-  let groomCount = 0;
-  let brideCount = 0;
+  let totalPaid = 0;
+  let groomTotal = 0;
+  let groomPaid = 0;
+  let brideTotal = 0;
+  let bridePaid = 0;
 
   guestData.forEach(g => {
     const amt = Number(g['金額']) || 0;
+    const isPaid = amt > 0;
     totalAmount += amt;
+    if (isPaid) totalPaid++;
+
     const side = String(g['陣營'] || '');
-    if (side.includes('男方')) groomCount++;
-    if (side.includes('女方')) brideCount++;
+    if (side.includes('男方')) {
+      groomTotal++;
+      if (isPaid) groomPaid++;
+    }
+    if (side.includes('女方')) {
+      brideTotal++;
+      if (isPaid) bridePaid++;
+    }
   });
 
   const totalGuestsEl = document.getElementById('stat-total-guests');
@@ -123,10 +135,10 @@ function updateStats() {
   const groomCountEl = document.getElementById('stat-groom-count');
   const brideCountEl = document.getElementById('stat-bride-count');
 
-  if (totalGuestsEl) totalGuestsEl.textContent = totalGuests.toLocaleString();
+  if (totalGuestsEl) totalGuestsEl.innerHTML = `${totalPaid} / ${totalGuests} <span class="stat-subtext">人</span>`;
   if (totalAmountEl) totalAmountEl.textContent = '$' + totalAmount.toLocaleString();
-  if (groomCountEl) groomCountEl.textContent = groomCount.toLocaleString();
-  if (brideCountEl) brideCountEl.textContent = brideCount.toLocaleString();
+  if (groomCountEl) groomCountEl.innerHTML = `${groomPaid} / ${groomTotal} <span class="stat-subtext">人</span>`;
+  if (brideCountEl) brideCountEl.innerHTML = `${bridePaid} / ${brideTotal} <span class="stat-subtext">人</span>`;
 }
 
 // 統一渲染入口：保證依目前 filter 和搜尋呈現清單
@@ -352,6 +364,40 @@ function handleQuickAmount(e) {
   }
 }
 
+// 快捷喜餅按鈕處理 (+1 與 歸 0)
+function handleQuickCake(e) {
+  const btn = e.target.closest('.btn-quick-cake');
+  if (!btn) return;
+
+  const cakeInput = document.getElementById('edit-cakes');
+  let currentVal = Number(cakeInput.value) || 0;
+
+  if (btn.dataset.cakeAdd !== undefined) {
+    const addVal = Number(btn.dataset.cakeAdd);
+    cakeInput.value = Math.max(0, currentVal + addVal);
+  } else if (btn.dataset.cakeSet !== undefined) {
+    cakeInput.value = Number(btn.dataset.cakeSet);
+  }
+}
+
+// 統計看板收合/展開切換
+function toggleStatsDashboard() {
+  const dashboard = document.getElementById('stat-dashboard');
+  const btn = document.getElementById('toggle-stats-btn');
+  if (!dashboard || !btn) return;
+
+  const isCollapsed = dashboard.classList.contains('collapsed');
+  if (isCollapsed) {
+    dashboard.classList.remove('collapsed');
+    btn.setAttribute('aria-expanded', 'true');
+    btn.textContent = '📊 收合統計看板 ▴';
+  } else {
+    dashboard.classList.add('collapsed');
+    btn.setAttribute('aria-expanded', 'false');
+    btn.textContent = '📊 報到統計看板 ▾';
+  }
+}
+
 // 儲存邏輯
 async function handleSave(e) {
   e.preventDefault();
@@ -498,6 +544,12 @@ function attachEventListeners() {
 
   // Quick preset amount buttons
   document.querySelector('.quick-amounts')?.addEventListener('click', handleQuickAmount);
+
+  // Quick cake buttons
+  document.querySelector('.quick-cake-actions')?.addEventListener('click', handleQuickCake);
+
+  // Toggle stats dashboard
+  document.getElementById('toggle-stats-btn')?.addEventListener('click', toggleStatsDashboard);
 
   // Filter tabs
   document.querySelectorAll('.filter-btn[data-filter]').forEach(btn => {

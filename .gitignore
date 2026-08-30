@@ -8,6 +8,11 @@ _site/
 .jekyll-metadata
 .claude
 .omo
+.gemini
+.agents
+.opencode
+.pi
+openspec
 # Additional Ruby/bundler ignore for when you run: bundle install
 /vendor
 

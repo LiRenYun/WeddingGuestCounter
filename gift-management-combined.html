@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <title>禮金管理系統</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --gradient-start: #ffeef8;
+      --gradient-end: #fff0f6;
+      --card-bg: rgba(255, 255, 255, 0.95);
+      --card-border: rgba(255, 107, 157, 0.1);
+      --primary: #ff6b9d;
+      --primary-light: #ffaac8;
+      --primary-dark: #e94f7e;
+      --accent: #ffd93d;
+      --success: #6bcf7f;
+      --text-primary: #2d2d2d;
+      --text-secondary: #6b6b6b;
+      --text-muted: #a0a0a0;
+      --side-groom-color: #4a90d9;
+      --side-bride-color: #e94f7e;
+      --shadow-sm: 0 2px 8px rgba(255, 107, 157, 0.08);
+      --shadow-md: 0 4px 16px rgba(255, 107, 157, 0.12);
+      --shadow-lg: 0 8px 32px rgba(255, 107, 157, 0.16);
+      --btn-bg: #ffffff;
+      --btn-text: #2d2d2d;
+      --btn-border: rgba(255, 107, 157, 0.2);
+      --filter-active-bg: #ff6b9d;
+      --filter-active-text: #ffffff;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --gradient-start: #1a1a2e;
+        --gradient-end: #2d2d44;
+        --card-bg: rgba(45, 45, 68, 0.95);
+        --card-border: rgba(255, 170, 200, 0.2);
+        --text-primary: #f0f0f0;
+        --text-secondary: #b0b0b0;
+        --text-muted: #808080;
+        --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+        --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+        --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+        --btn-bg: #2d2d44;
+        --btn-text: #f0f0f0;
+        --btn-border: rgba(255, 170, 200, 0.2);
+        --filter-active-bg: #ff6b9d;
+        --filter-active-text: #ffffff;
+      }
+    }
+
+    :root[data-theme="dark"] {
+      --gradient-start: #1a1a2e;
+      --gradient-end: #2d2d44;
+      --card-bg: rgba(45, 45, 68, 0.95);
+      --card-border: rgba(255, 170, 200, 0.2);
+      --text-primary: #f0f0f0;
+      --text-secondary: #b0b0b0;
+      --text-muted: #808080;
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+      --btn-bg: #2d2d44;
+      --btn-text: #f0f0f0;
+      --btn-border: rgba(255, 170, 200, 0.2);
+      --filter-active-bg: #ff6b9d;
+      --filter-active-text: #ffffff;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
+      color: var(--text-primary);
+      line-height: 1.6;
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    body.amounts-hidden .guest-amount {
+      filter: blur(10px);
+      user-select: none;
+      visibility: hidden;
+    }
+
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 36px;
+      animation: fadeInDown 0.6s ease;
+    }
+
+    .header h1 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      color: var(--text-secondary);
+      font-size: 1.05rem;
+    }
+
+    /* Card */
+    .card {
+      background: var(--card-bg);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 32px;
+      box-shadow: var(--shadow-md);
+      animation: fadeInUp 0.6s ease;
+    }
+
+    /* Filter bar */
+    .filter-bar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      padding: 10px 24px;
+      font-family: 'Noto Sans TC', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 500;
+      border: 2px solid var(--btn-border);
+      border-radius: 12px;
+      background: var(--btn-bg);
+      color: var(--btn-text);
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .filter-btn:hover {
+      border-color: var(--primary);
+      transform: translateY(-1px);
+    }
+
+    .filter-btn.active {
+      background: var(--filter-active-bg);
+      color: var(--filter-active-text);
+      border-color: var(--filter-active-bg);
+    }
+
+    /* Toolbar */
+    .toolbar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .search-box {
+      flex: 1;
+      min-width: 200px;
+      position: relative;
+    }
+
+    .search-box input {
+      width: 100%;
+      padding: 14px 20px 14px 46px;
+      font-family: 'Noto Sans TC', sans-serif;
+      font-size: 1rem;
+      border: 2px solid var(--card-border);
+      border-radius: 12px;
+      background: var(--card-bg);
+      color: var(--text-primary);
+      transition: all 0.3s;
+    }
+
+    .search-box input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(255, 107, 157, 0.1);
+    }
+
+    .search-box::before {
+      content: '';
+      position: absolute;
+      left: 18px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 20px;
+      height: 20px;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23a0a0a0' viewBox='0 0 24 24'%3E%3Cpath d='M10 2a8 8 0 105.293 14.707l4 4a1 1 0 001.414-1.414l-4-4A8 8 0 0010 2zm0 2a6 6 0 110 12 6 6 0 010-12z'/%3E%3C/svg%3E") center / contain no-repeat;
+      opacity: 0.5;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      font-family: 'Noto Sans TC', sans-serif;
+      font-size: 1rem;
+      font-weight: 500;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s;
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: white;
+    }
+
+    .btn-secondary {
+      background: var(--btn-bg);
+      color: var(--btn-text);
+      border: 2px solid var(--btn-border);
+    }
+
+    .btn-icon {
+      padding: 12px;
+      font-size: 1.3rem;
+    }
+
+    /* Guest list */
+    .guest-list {
+      max-height: 65vh;
+      overflow-y: auto;
+      margin: -10px;
+      padding: 10px;
+    }
+
+    .guest-list::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .guest-list::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .guest-list::-webkit-scrollbar-thumb {
+      background: var(--primary-light);
+      border-radius: 4px;
+    }
+
+    .guest-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 22px 24px;
+      margin-bottom: 14px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .guest-item:hover {
+      transform: translateX(4px);
+      box-shadow: var(--shadow-sm);
+      border-color: var(--primary);
+    }
+
+    .guest-info {
+      flex: 1;
+    }
+
+    .guest-name {
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+      transition: color 0.3s;
+    }
+
+    .guest-name.paid {
+      color: var(--success);
+    }
+
+    .guest-name.unpaid {
+      color: var(--text-muted);
+    }
+
+    .guest-side {
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 4px 14px;
+      border-radius: 20px;
+      display: inline-block;
+    }
+
+    .side-groom {
+      background: rgba(74, 144, 217, 0.12);
+      color: var(--side-groom-color);
+    }
+
+    .side-bride {
+      background: rgba(233, 79, 126, 0.12);
+      color: var(--side-bride-color);
+    }
+
+    .guest-amount {
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+    }
+
+    .empty-state-icon {
+      font-size: 4rem;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+
+    /* Edit form */
+    .edit-form {
+      max-width: 520px;
+      margin: 0 auto;
+    }
+
+    .form-group {
+      margin-bottom: 26px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 10px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      font-size: 1rem;
+    }
+
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      padding: 14px 18px;
+      font-family: 'Noto Sans TC', sans-serif;
+      font-size: 1rem;
+      border: 2px solid var(--card-border);
+      border-radius: 12px;
+      background: var(--card-bg);
+      color: var(--text-primary);
+      transition: all 0.3s;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(255, 107, 157, 0.1);
+    }
+
+    .form-group input:read-only {
+      background: rgba(0, 0, 0, 0.03);
+      color: var(--text-muted);
+      cursor: not-allowed;
+    }
+
+    .form-group input[type="number"] {
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.3rem;
+      font-weight: 600;
+    }
+
+    .form-group textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 32px;
+    }
+
+    .form-actions .btn {
+      flex: 1;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      background: var(--card-bg);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--card-border);
+      padding: 16px 24px;
+      border-radius: 12px;
+      box-shadow: var(--shadow-lg);
+      z-index: 1000;
+      animation: slideIn 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      max-width: 360px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 1rem;
+    }
+
+    .toast.success {
+      border-left: 4px solid var(--success);
+    }
+
+    .toast.error {
+      border-left: 4px solid #ff4757;
+    }
+
+    .toast-icon {
+      font-size: 1.5rem;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+      font-size: 1.1rem;
+    }
+
+    .loading-spinner {
+      width: 44px;
+      height: 44px;
+      border: 4px solid var(--card-border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    /* Animations */
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes slideIn {
+      from { transform: translateX(400px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      body {
+        padding: 16px;
+      }
+
+      .header h1 {
+        font-size: 1.7rem;
+      }
+
+      .card {
+        padding: 24px;
+      }
+
+      .filter-bar {
+        flex-direction: row;
+        flex-wrap: wrap;
+      }
+
+      .toolbar {
+        flex-direction: column;
+      }
+
+      .search-box {
+        min-width: unset;
+      }
+
+      .guest-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 14px;
+      }
+
+      .guest-amount {
+
+<script>
+// ==================== Configuration ====================
+const API_URL = 'https://script.google.com/macros/s/AKfycbwIyadecSWnd5dtegzvhXz9Epsr4bWZ4tuS7h9bXUEMIBrAlLGBPe9ZwOHVBdn9nx7C0A/exec';
+
+// ==================== Text Content ====================
+const text = {
+  title: '禮金管理系統',
+  subtitle: 'Wedding Gift Management',
+  search_placeholder: '搜尋姓名或陣營...',
+  btn_all: '全部',
+  btn_groom: '男方',
+  btn_bride: '女方',
+  toggle_amounts: '隱藏/顯示金額',
+  loading: '載入中...',
+  empty: '尚無賓客資料',
+  error_load: '載入失敗，請重新整理頁面',
+  edit_title: '編輯禮金',
+  label_name: '姓名',
+  label_side: '陣營',
+  label_amount: '禮金金額 (NT$)',
+  label_cakes: '喜餅數量',
+  label_note: '備註/合包明細',
+  btn_cancel: '取消',
+  btn_save: '儲存',
+  btn_saving: '儲存中...',
+  success_save: '儲存成功！',
+  error_save: '儲存失敗，請重試',
+  error_amount: '請輸入有效金額'
+};
+
+// ==================== State ====================
+let guestData = [];
+let currentGuest = null;
+let filterMode = 'all'; // 'all' | 'groom' | 'bride'
+
+// ==================== Initialize ====================
+function init() {
+  // 預設隱藏金額
+  document.body.classList.add('amounts-hidden');
+  document.getElementById('eye-icon').textContent = '🙈';
+
+  attachEventListeners();
+  loadGuestData();
+}
+
+// ==================== Data Functions ====================
+async function loadGuestData() {
+  const listEl = document.getElementById('guest-list');
+
+  try {
+    const response = await fetch(API_URL + '?action=gift');
+    const result = await response.json();
+
+    if (result.status === 'success' && result.data && result.data.gift) {
+      guestData = result.data.gift;
+      renderGuestList(guestData);
+    } else {
+      throw new Error('Invalid response format');
+    }
+  } catch (error) {
+    console.error('Load error:', error);
+    listEl.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon"></div>
+        <p>${text.error_load}</p>
+      </div>
+    `;
+  }
+}
+
+function getFilteredData() {
+  if (filterMode === 'groom') {
+    return guestData.filter(g => (g['陣營'] || '').includes('男方'));
+  } else if (filterMode === 'bride') {
+    return guestData.filter(g => (g['陣營'] || '').includes('女方'));
+  }
+  return guestData;
+}
+
+function renderGuestList(data) {
+  const listEl = document.getElementById('guest-list');
+
+  if (!data || data.length === 0) {
+    listEl.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon"></div>
+        <p>${text.empty}</p>
+      </div>
+    `;
+    return;
+  }
+
+  listEl.innerHTML = data.map(guest => {
+    const amount = Number(guest['金額']) || 0;
+    const isPaid = amount > 0;
+    const paidClass = isPaid ? 'paid' : 'unpaid';
+    const name = guest['姓名'] || '';
+    const side = guest['陣營'] || '';
+    const sideClass = side.includes('男方') ? 'side-groom' : 'side-bride';
+
+    return `
+      <div class="guest-item" data-name="${escapeHtml(name)}" data-side="${escapeHtml(side)}">
+        <div class="guest-info">
+          <div class="guest-name ${paidClass}">${escapeHtml(name)}</div>
+          <span class="guest-side ${sideClass}">${escapeHtml(side)}</span>
+        </div>
+        <div class="guest-amount">$${amount.toLocaleString()}</div>
+      </div>
+    `;
+  }).join('');
+
+  attachGuestItemListeners();
+}
+
+function attachGuestItemListeners() {
+  document.querySelectorAll('.guest-item').forEach(item => {
+    item.addEventListener('click', async () => {
+      const name = item.dataset.name;
+      const side = item.dataset.side;
+      // 重新從 API 拉取最新資料
+      const guest = await fetchGuestByNameSide(name, side);
+      if (guest) {
+        openEditView(guest);
+      }
+    });
+  });
+}
+
+async function fetchGuestByNameSide(name, side) {
+  try {
+    const response = await fetch(API_URL + '?action=gift');
+    const result = await response.json();
+    if (result.status === 'success' && result.data && result.data.gift) {
+      return result.data.gift.find(g =>
+        g['姓名'] === name && g['陣營'] === side
+      ) || null;
+    }
+  } catch (e) {
+    console.warn('Failed to re-fetch guest:', e);
+  }
+  // Fallback: 從本地資料找
+  return guestData.find(g => g['姓名'] === name && g['陣營'] === side) || null;
+}
+
+// ==================== Filter ====================
+function setFilter(mode) {
+  filterMode = mode;
+  // 更新篩選按鈕樣式
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.classList.remove('active');
+    if (btn.dataset.filter === mode) {
+      btn.classList.add('active');
+    }
+  });
+  renderGuestList(getFilteredData());
+}
+
+// ==================== Search ====================
+function handleSearch(e) {
+  const keyword = e.target.value.toLowerCase().trim();
+
+  let filtered = getFilteredData();
+
+  if (keyword) {
+    filtered = filtered.filter(guest => {
+      const name = (guest['姓名'] || '').toLowerCase();
+      const side = (guest['陣營'] || '').toLowerCase();
+      return name.includes(keyword) || side.includes(keyword);
+    });
+  }
+
+  renderGuestList(filtered);
+}
+
+// ==================== Toggle Amounts ====================
+function toggleAmounts() {
+  const eyeIcon = document.getElementById('eye-icon');
+
+  if (document.body.classList.contains('amounts-hidden')) {
+    document.body.classList.remove('amounts-hidden');
+    eyeIcon.textContent = '👁️';
+  } else {
+    document.body.classList.add('amounts-hidden');
+    eyeIcon.textContent = '🙈';
+  }
+}
+
+// ==================== Edit View ====================
+async function openEditView(guest) {
+  currentGuest = guest;
+  document.getElementById('edit-name').value = guest['姓名'] || '';
+  document.getElementById('edit-side').value = guest['陣營'] || '';
+  document.getElementById('edit-amount').value = Number(guest['金額']) || 0;
+  document.getElementById('edit-cakes').value = Number(guest['喜餅數量']) || 0;
+  document.getElementById('edit-note').value = guest['備註/合包明細'] || '';
+
+  document.getElementById('list-view').classList.add('hidden');
+  document.getElementById('edit-view').classList.remove('hidden');
+}
+
+function closeEditView() {
+  currentGuest = null;
+  document.getElementById('edit-view').classList.add('hidden');
+  document.getElementById('list-view').classList.remove('hidden');
+}
+
+async function handleSave(e) {
+  e.preventDefault();
+
+  const amount = document.getElementById('edit-amount').value;
+  if (!amount || isNaN(amount) || Number(amount) < 0) {
+    showToast(text.error_amount, 'error');
+    return;
+  }
+
+  const saveBtn = document.getElementById('save-btn');
+  const originalText = saveBtn.textContent;
+  saveBtn.disabled = true;
+  saveBtn.textContent = text.btn_saving;
+
+  try {
+    const payload = {
+      formType: 'gift',
+      action: 'update',
+      name: currentGuest['姓名'],
+      side: currentGuest['陣營'],
+      amount: Number(amount),
+      cakes: Number(document.getElementById('edit-cakes').value) || 0,
+      note: document.getElementById('edit-note').value
+    };
+
+    await fetch(API_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload)
+    });
+
+    // Refresh list from server
+    await loadGuestData();
+
+    showToast(text.success_save, 'success');
+    closeEditView();
+
+  } catch (error) {
+    console.error('Save error:', error);
+    showToast(text.error_save, 'error');
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.textContent = originalText;
+  }
+}
+
+// ==================== Toast ====================
+function showToast(message, type = 'success') {
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+
+  const icon = type === 'success' ? '' : '';
+  toast.innerHTML = `
+    <span class="toast-icon">${icon}</span>
+    <span>${message}</span>
+  `;
+
+  document.body.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.animation = 'slideIn 0.4s reverse';
+    setTimeout(() => toast.remove(), 400);
+  }, 3000);
+}
+
+// ==================== Event Listeners ====================
+function attachEventListeners() {
+  document.getElementById('search-input').addEventListener('input', handleSearch);
+  document.getElementById('toggle-amounts').addEventListener('click', toggleAmounts);
+  document.getElementById('cancel-btn').addEventListener('click', closeEditView);
+  document.getElementById('edit-form').addEventListener('submit', handleSave);
+
+  // Filter buttons
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => setFilter(btn.dataset.filter));
+  });
+}
+
+// ==================== Utility ====================
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// ==================== Start ====================
+init();
+</script>

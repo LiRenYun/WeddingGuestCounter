@@ -2,8 +2,16 @@
  * 📷 婚紗特集照片清單 (預設雲端測試照片)
  * 💡 清空下方陣列即可測試「🚧 功能開發中」提示。
  */
-//"img/p1.jpg","img/p2.jpg","img/p3.jpg","img/p4.jpg","img/p5.jpg","img/p6.jpg","img/p7.jpg"
-const weddingPhotos = []; 
+const weddingPhotos = [
+    "img/1.jpg", "img/2.jpg", "img/3.jpg", "img/4.jpg", "img/5.jpg",
+    "img/6.jpg", "img/7.jpg", "img/8.jpg", "img/9.jpg", "img/10.jpg",
+    "img/11.jpg", "img/12.jpg", "img/13.jpg", "img/14.jpg", "img/15.jpg",
+    "img/16.jpg", "img/17.jpg", "img/18.jpg", "img/19.jpg", "img/20.jpg",
+    "img/21.jpg", "img/22.jpg", "img/23.jpg", "img/24.jpg", "img/25.jpg",
+    "img/26.jpg", "img/27.jpg", "img/28.jpg", "img/29.jpg", "img/30.jpg",
+    "img/31.jpg", "img/32.jpg", "img/33.jpg", "img/34.jpg", "img/35.jpg",
+    "img/36.jpg", "img/37.jpg", "img/38.jpg", "img/39.jpg", "img/40.jpg"
+];
 
 // ================= 1. 多國語系字典 (i18n) =================
 const translations = {
@@ -232,11 +240,11 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         const targetId = btn.getAttribute('data-target');
         const targetSection = document.getElementById(targetId);
-        
+
         if (targetSection) {
             document.querySelectorAll('.view-section').forEach(sec => sec.classList.add('hidden'));
             targetSection.classList.remove('hidden');
-            
+
             if (targetId === 'sec-photos' || targetId === 'sec-game') {
                 document.querySelector('.game-box').classList.add('expanded');
                 if (targetId === 'sec-photos') initWeddingPhotos();
@@ -270,7 +278,7 @@ if (btnNextStep) {
     btnNextStep.addEventListener('click', () => {
         const sideChecked = document.querySelector('input[name="side"]:checked');
         if (!sideChecked) {
-            const alertMsg = translations[currentLang]?.alert_select_side || 
+            const alertMsg = translations[currentLang]?.alert_select_side ||
                 (currentLang === 'zh' ? "請先選擇您是哪一方的親友喔！" : "どちら側の親族・ご友人か選択してください。");
             alert(alertMsg);
             return;
@@ -408,16 +416,16 @@ if (rsvpChild) {
 document.addEventListener('click', (e) => {
     // 如果點擊的是按鈕或輸入框，依然會觸發動畫
     const particleCount = 60; // 每次點擊噴出的粒子數量
-    
+
     for (let i = 0; i < particleCount; i++) {
         const p = document.createElement('div');
         p.className = 'pixel-confetti';
-        
+
         // 隨機決定是愛心還是小方塊
         const symbols = ['💖', '▪', '⭐', '✨', '🌸', '💎', '❤️', '🔥'];
         p.innerText = symbols[Math.floor(Math.random() * symbols.length)];
         //p.innerText = Math.random() > 0.4 ? '💖' : '▪';
-        
+
         // 定位在滑鼠游標的位置
         p.style.left = `${e.clientX}px`;
         p.style.top = `${e.clientY}px`;
@@ -425,20 +433,20 @@ document.addEventListener('click', (e) => {
         p.style.fontSize = Math.random() > 0.5 ? '14px' : '10px';
         p.style.zIndex = '99999';
         p.style.pointerEvents = 'none';
-        
+
         // 隨機計算爆炸散射的角度與力道 (CSS 動畫變數)
         const angle = Math.random() * Math.PI * 2;
         const velocity = 100 + Math.random() * 200;
         const dx = Math.cos(angle) * velocity;
         const dy = Math.sin(angle) * velocity - 50; // 稍微帶有一點往上飄的效果
         const dr = (Math.random() - 0.5) * 360; // 旋轉角度
-        
+
         p.style.setProperty('--dx', `${dx}px`);
         p.style.setProperty('--dy', `${dy}px`);
         p.style.setProperty('--dr', `${dr}deg`);
-        
+
         document.body.appendChild(p);
-        
+
         // 動態結束後自動將物件銷毀，防止佔用記憶體
         p.addEventListener('animationend', () => p.remove());
     }
@@ -446,24 +454,24 @@ document.addEventListener('click', (e) => {
 
 
 // ================= 6. 婚紗相簿 - 浮動置中輪播與手勢核心 =================
-let currentPhotoIndex = 0; 
-let isDragMoving = false; 
+let currentPhotoIndex = 0;
+let isDragMoving = false;
 
 function initWeddingPhotos() {
     const container = document.getElementById('photos-container');
     const emptyMsg = document.getElementById('photos-empty-msg');
-    
+
     if (!container || !emptyMsg) return;
 
     if (weddingPhotos.length === 0) {
-        container.classList.add('hidden'); 
-        emptyMsg.classList.remove('hidden'); 
+        container.classList.add('hidden');
+        emptyMsg.classList.remove('hidden');
         return;
     }
 
     emptyMsg.classList.add('hidden');
     container.classList.remove('hidden');
-    
+
     if (container.children.length === 0) {
         container.innerHTML = '';
         weddingPhotos.forEach((src, index) => {
@@ -471,31 +479,31 @@ function initWeddingPhotos() {
             img.src = src;
             img.className = 'photo-item';
             img.alt = `Wedding Photo ${index + 1}`;
-            img.setAttribute('draggable', 'false'); 
-            
+            img.setAttribute('draggable', 'false');
+
             img.onload = () => {
                 updateCarouselPosition();
             };
-            
+
             img.addEventListener('click', (e) => {
-                if (isDragMoving) return; 
+                if (isDragMoving) return;
                 currentPhotoIndex = index;
                 updateCarouselPosition();
                 openLightbox(src);
             });
             container.appendChild(img);
         });
-        
+
         addDragInteractionToCarousel();
     }
-    updateCarouselPosition(0); 
+    updateCarouselPosition(0);
 }
 
 function updateCarouselPosition(customSpeed) {
     const container = document.getElementById('photos-container');
     const items = container.querySelectorAll('.photo-item');
     const viewContainer = document.querySelector('.game-box');
-    
+
     if (items.length === 0 || !viewContainer) return;
 
     if (currentPhotoIndex < 0) currentPhotoIndex = 0;
@@ -509,11 +517,11 @@ function updateCarouselPosition(customSpeed) {
     const activeItem = items[currentPhotoIndex];
     const containerWidth = viewContainer.offsetWidth;
     const trackOffset = (containerWidth / 2) - (activeItem.offsetLeft + activeItem.offsetWidth / 2);
-    
+
     if (customSpeed !== undefined) {
         container.style.transition = `transform ${customSpeed}s cubic-bezier(0.23, 1, 0.32, 1)`;
     } else {
-        container.style.transition = 'transform 0.5s cubic-bezier(0.23, 1, 0.32, 1)'; 
+        container.style.transition = 'transform 0.5s cubic-bezier(0.23, 1, 0.32, 1)';
     }
     container.style.transform = `translateX(${trackOffset}px)`;
 }
@@ -525,30 +533,30 @@ function addDragInteractionToCarousel() {
     let isDragging = false;
     let startX = 0;
     let startOffset = 0;
-    let dragThreshold = 40; 
+    let dragThreshold = 40;
 
     const getCurrentTranslate = (el) => {
         const style = window.getComputedStyle(el);
         const matrix = new WebKitCSSMatrix(style.transform);
-        return matrix.m41; 
+        return matrix.m41;
     }
 
     const startDrag = (e) => {
         isDragging = true;
-        isDragMoving = false; 
+        isDragMoving = false;
         startX = e.clientX || e.touches[0].clientX;
         startOffset = getCurrentTranslate(touchZone);
-        touchZone.style.transition = 'none'; 
+        touchZone.style.transition = 'none';
     };
 
     const moveDrag = (e) => {
         if (!isDragging) return;
         const currentX = e.clientX || (e.touches && e.touches[0].clientX);
         if (currentX === undefined) return;
-        
+
         const diffX = currentX - startX;
         if (Math.abs(diffX) > 8) {
-            isDragMoving = true; 
+            isDragMoving = true;
         }
         touchZone.style.transform = `translateX(${startOffset + diffX}px)`;
     };
@@ -563,18 +571,18 @@ function addDragInteractionToCarousel() {
         } else if (e.changedTouches && e.changedTouches[0]) {
             currentX = e.changedTouches[0].clientX;
         }
-        
+
         const diffX = currentX - startX;
         const firstItem = document.querySelector('.photo-item');
-        const itemWidth = firstItem ? (firstItem.offsetWidth + 30) : 180; 
-        
+        const itemWidth = firstItem ? (firstItem.offsetWidth + 30) : 180;
+
         if (Math.abs(diffX) > dragThreshold) {
             let change = Math.round(diffX / itemWidth);
             if (change === 0) change = diffX > 0 ? 1 : -1;
-            currentPhotoIndex -= change; 
+            currentPhotoIndex -= change;
         }
-        
-        updateCarouselPosition(0.4); 
+
+        updateCarouselPosition(0.4);
         setTimeout(() => { isDragMoving = false; }, 80);
     };
 
@@ -606,7 +614,7 @@ function addSwipeInteractionToModal() {
 
     let isModalDragging = false;
     let startModalX = 0;
-    let swipeThreshold = 80; 
+    let swipeThreshold = 80;
 
     const startModalDrag = (e) => {
         isModalDragging = true;
@@ -618,9 +626,9 @@ function addSwipeInteractionToModal() {
         if (!isModalDragging) return;
         const currentModalX = e.clientX || (e.touches && e.touches[0].clientX);
         if (currentModalX === undefined) return;
-        
+
         const diffX = currentModalX - startModalX;
-        modalTouchZone.style.transform = `translateX(${diffX}px)`; 
+        modalTouchZone.style.transform = `translateX(${diffX}px)`;
     };
 
     const endModalDrag = (e) => {
@@ -633,12 +641,12 @@ function addSwipeInteractionToModal() {
         } else if (e.changedTouches && e.changedTouches[0]) {
             endModalX = e.changedTouches[0].clientX;
         }
-        
+
         const diffX = endModalX - startModalX;
         modalTouchZone.style.transition = 'transform 0.3s cubic-bezier(0.23, 1, 0.32, 1)';
 
         if (diffX < -swipeThreshold) {
-            currentPhotoIndex = (currentPhotoIndex + 1) % weddingPhotos.length; 
+            currentPhotoIndex = (currentPhotoIndex + 1) % weddingPhotos.length;
         } else if (diffX > swipeThreshold) {
             currentPhotoIndex = (currentPhotoIndex - 1 + weddingPhotos.length) % weddingPhotos.length;
         }
@@ -693,7 +701,7 @@ if (mapImg) {
         const mNext = document.getElementById('modal-next');
         if (mPrev) mPrev.style.display = 'none';
         if (mNext) mNext.style.display = 'none';
-        
+
         const modalTouchZone = document.getElementById('modal-touch-zone');
         if (modalTouchZone) {
             modalTouchZone.innerHTML = `<img id="enlarged-img" src="${mapImg.src}" alt="Map">`;
@@ -784,7 +792,7 @@ function validateRsvpForm() {
         const veg = parseInt(dietVeg?.value) || 0;
         if (meat + veg !== totalPax) {
             if (dietError) dietError.classList.remove('hidden');
-            const errorMsg = translations[currentLang]?.diet_error || 
+            const errorMsg = translations[currentLang]?.diet_error ||
                 (currentLang === 'zh' ? "⚠️ 葷食與素食人數總和必須等於參與總人數！" : "⚠️ お肉とベジタリアンの合計人数が参加人数と一致していません！");
             alert(errorMsg);
             if (dietMeat) dietMeat.focus();
@@ -798,8 +806,8 @@ handleFormSubmit('form-rsvp', 'rsvp', () => {
     const totalPax = rsvpPax ? (parseInt(rsvpPax.value) || 1) : 1;
     const meat = dietMeat ? (parseInt(dietMeat.value) || 0) : 0;
     const veg = dietVeg ? (parseInt(dietVeg.value) || 0) : 0;
-    const dietVal = totalPax > 1 
-        ? `葷:${meat},素:${veg}` 
+    const dietVal = totalPax > 1
+        ? `葷:${meat},素:${veg}`
         : (document.querySelector('input[name="diet"]:checked')?.value || "葷食");
 
     return {

@@ -457,6 +457,29 @@ document.addEventListener('click', (e) => {
 let currentPhotoIndex = 0;
 let isDragMoving = false;
 
+/**
+ * 懶加載：只將當前張及前後 PRELOAD_RANGE 張的 data-src 真正賦給 src
+ * 避免一次下載全部 40 張大圖
+ */
+const PHOTO_PRELOAD_RANGE = 2;
+
+function lazyLoadPhotoRange(index) {
+    const container = document.getElementById('photos-container');
+    if (!container) return;
+    const items = container.querySelectorAll('.photo-item[data-src]');
+    const total = items.length;
+    for (let i = 0; i < total; i++) {
+        if (Math.abs(i - index) <= PHOTO_PRELOAD_RANGE) {
+            const item = items[i];
+            if (item.dataset.src && !item.dataset.loaded) {
+                item.dataset.loaded = '1';
+                item.src = item.dataset.src;
+                item.onload = () => updateCarouselPosition();
+            }
+        }
+    }
+}
+
 function initWeddingPhotos() {
     const container = document.getElementById('photos-container');
     const emptyMsg = document.getElementById('photos-empty-msg');
@@ -476,14 +499,11 @@ function initWeddingPhotos() {
         container.innerHTML = '';
         weddingPhotos.forEach((src, index) => {
             const img = document.createElement('img');
-            img.src = src;
+            // 懶加載：先存到 data-src，不立刻設定 src
+            img.dataset.src = src;
             img.className = 'photo-item';
             img.alt = `Wedding Photo ${index + 1}`;
             img.setAttribute('draggable', 'false');
-
-            img.onload = () => {
-                updateCarouselPosition();
-            };
 
             img.addEventListener('click', (e) => {
                 if (isDragMoving) return;
@@ -496,6 +516,9 @@ function initWeddingPhotos() {
 
         addDragInteractionToCarousel();
     }
+
+    // 只載入起始張及附近的圖片
+    lazyLoadPhotoRange(currentPhotoIndex);
     updateCarouselPosition(0);
 }
 
@@ -583,6 +606,7 @@ function addDragInteractionToCarousel() {
         }
 
         updateCarouselPosition(0.4);
+        lazyLoadPhotoRange(currentPhotoIndex);
         setTimeout(() => { isDragMoving = false; }, 80);
     };
 

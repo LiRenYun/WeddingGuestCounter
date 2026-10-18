@@ -1,0 +1,1531 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>金饌廳 桌次配置圖｜婚宴座位安排系統</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🪑</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;900&family=Noto+Serif+TC:wght@600;700;900&display=swap" rel="stylesheet">
+  <!-- SheetJS for .xlsx Export & Import -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      --tiffany-bg: #8fc9d3;
+      --tiffany-deep: #6bb2bf;
+      --tiffany-darker: #3e8694;
+      --tiffany-card: rgba(255, 255, 255, 0.94);
+      --gold-title: #f3c892;
+      --gold-stroke: #8a5a2b;
+      --navy-text: #1c4b5c;
+      --slate-text: #1f2937;
+      --muted-text: #64748b;
+      --orange-zone-border: #f59e0b;
+      --orange-zone-bg: rgba(245, 158, 11, 0.12);
+      --veg-green: #10b981;
+      --veg-bg: #d1fae5;
+      --meat-pink: #f43f5e;
+      --meat-bg: #ffe4e6;
+      --child-amber: #f59e0b;
+      --child-bg: #fef3c7;
+      --gift-purple: #8b5cf6;
+      --gift-bg: #ede9fe;
+      --primary-btn: #0d9488;
+      --primary-btn-hover: #0f766e;
+      --danger-btn: #ef4444;
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 22px;
+      --shadow-soft: 0 10px 30px -5px rgba(20, 70, 85, 0.18);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(145deg, #dff1f4 0%, #c6e6ec 50%, #e7f4f6 100%);
+      color: var(--slate-text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* Top Control Bar & Dashboard */
+    .top-bar {
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(107, 178, 191, 0.35);
+      padding: 10px 18px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 4px 16px rgba(28, 75, 92, 0.08);
+    }
+
+    .top-bar-inner {
+      max-width: 1640px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #5da7b5, #2b7280);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.35rem;
+      box-shadow: 0 4px 10px rgba(43, 114, 128, 0.25);
+    }
+
+    .brand-titles h1 {
+      font-family: 'Noto Serif TC', serif;
+      font-size: 1.25rem;
+      font-weight: 900;
+      color: var(--navy-text);
+      letter-spacing: 0.5px;
+    }
+
+    .brand-sub {
+      font-size: 0.78rem;
+      color: var(--muted-text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sync-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 2px 9px;
+      border-radius: 999px;
+      font-size: 0.74rem;
+      font-weight: 600;
+      background: #e2e8f0;
+      color: #475569;
+    }
+    .sync-badge.saved {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    .sync-badge.dirty {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    .sync-badge.saving {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+
+    /* Live Statistics Pills */
+    .stats-strip {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .stat-pill {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 5px 12px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: #334155;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .stat-pill strong {
+      font-size: 0.98rem;
+      font-weight: 800;
+      color: var(--navy-text);
+      font-variant-numeric: tabular-nums;
+    }
+    .stat-pill.veg strong { color: #059669; }
+    .stat-pill.child strong { color: #d97706; }
+    .stat-pill.gift strong { color: #7c3aed; }
+
+    /* Toolbar Buttons */
+    .toolbar-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .btn {
+      border: 1px solid transparent;
+      border-radius: 10px;
+      padding: 7px 13px;
+      font-family: inherit;
+      font-size: 0.84rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.16s ease;
+      background: #fff;
+      color: #334155;
+      border-color: #cbd5e1;
+      white-space: nowrap;
+    }
+    .btn:hover {
+      background: #f1f5f9;
+      transform: translateY(-1px);
+    }
+    .btn:active {
+      transform: translateY(0);
+    }
+    .btn:focus-visible {
+      outline: 2px solid var(--navy-text);
+      outline-offset: 2px;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #0d9488, #0f766e);
+      color: #fff;
+      border-color: transparent;
+      box-shadow: 0 3px 10px rgba(13, 148, 136, 0.28);
+    }
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #0f766e, #115e59);
+    }
+    .btn-orange {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #fff;
+      border-color: transparent;
+      box-shadow: 0 3px 10px rgba(245, 158, 11, 0.28);
+    }
+    .btn-orange:hover {
+      background: linear-gradient(135deg, #d97706, #b45309);
+    }
+    .btn-danger {
+      background: #fef2f2;
+      color: #dc2626;
+      border-color: #fecaca;
+    }
+    .btn-danger:hover {
+      background: #fee2e2;
+    }
+    .btn-sm {
+      padding: 4px 9px;
+      font-size: 0.78rem;
+      border-radius: 8px;
+    }
+
+    /* Sub-toolbar: Filter & Display Mode & Search */
+    .sub-toolbar {
+      max-width: 1640px;
+      width: 100%;
+      margin: 8px auto 0;
+      padding-top: 8px;
+      border-top: 1px dashed #e2e8f0;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .search-and-filters {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .search-box {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .search-box input {
+      padding: 6px 28px 6px 30px;
+      border: 1px solid #cbd5e1;
+      border-radius: 999px;
+      font-size: 0.83rem;
+      width: 210px;
+      font-family: inherit;
+      background: #fff;
+    }
+    .search-box input:focus {
+      outline: none;
+      border-color: var(--primary-btn);
+      box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
+    }
+    .search-icon {
+      position: absolute;
+      left: 10px;
+      font-size: 0.85rem;
+      color: #94a3b8;
+      pointer-events: none;
+    }
+    .search-clear {
+      position: absolute;
+      right: 8px;
+      background: none;
+      border: none;
+      font-size: 0.85rem;
+      color: #94a3b8;
+      cursor: pointer;
+      display: none;
+    }
+
+    .chip-group {
+      display: inline-flex;
+      background: #f1f5f9;
+      padding: 3px;
+      border-radius: 10px;
+      gap: 3px;
+    }
+    .chip-btn {
+      border: none;
+      background: transparent;
+      padding: 4px 10px;
+      border-radius: 7px;
+      font-family: inherit;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #475569;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .chip-btn.active {
+      background: #fff;
+      color: var(--navy-text);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    }
+
+    /* Main Workspace Layout */
+    .workspace {
+      flex: 1;
+      max-width: 1640px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 16px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 460px;
+      gap: 18px;
+      align-items: start;
+    }
+
+    @media (max-width: 1200px) {
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Banquet Hall Poster Container (Matches Screenshot Aspect & Tiffany Theme) */
+    .hall-scroll-wrapper {
+      width: 100%;
+      overflow: auto;
+      display: flex;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.45);
+      border-radius: 26px;
+      padding: 16px;
+      box-shadow: inset 0 2px 10px rgba(28, 75, 92, 0.06);
+    }
+
+    .banquet-poster {
+      position: relative;
+      width: 920px;
+      min-width: 920px;
+      height: 1520px;
+      background-color: var(--tiffany-bg);
+      background-image:
+        radial-gradient(circle at 85% 12%, rgba(255, 255, 255, 0.18) 0%, transparent 18%),
+        radial-gradient(circle at 14% 72%, rgba(255, 255, 255, 0.14) 0%, transparent 16%),
+        repeating-radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.06) 0, rgba(255, 255, 255, 0.06) 2px, transparent 2px, transparent 18px);
+      border-radius: 44px;
+      border: 6px solid #e9f6f8;
+      box-shadow: 0 20px 50px rgba(22, 68, 82, 0.25), inset 0 0 0 3px rgba(255, 255, 255, 0.65);
+      user-select: none;
+      overflow: hidden;
+      transform-origin: top center;
+      transition: transform 0.2s ease;
+    }
+
+    /* Inner decorative border frame */
+    .poster-inner-frame {
+      position: absolute;
+      inset: 14px;
+      border: 2.5px solid rgba(255, 255, 255, 0.85);
+      border-radius: 34px;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    /* Vintage Corner Filigree Ornaments */
+    .corner-ornament {
+      position: absolute;
+      width: 110px;
+      height: 110px;
+      pointer-events: none;
+      z-index: 3;
+      opacity: 0.92;
+    }
+    .corner-ornament.tl { top: 18px; left: 18px; }
+    .corner-ornament.tr { top: 18px; right: 18px; transform: scaleX(-1); }
+    .corner-ornament.bl { bottom: 18px; left: 18px; transform: scaleY(-1); }
+    .corner-ornament.br { bottom: 18px; right: 18px; transform: scale(-1, -1); }
+
+    /* Ocean Watermark Illustrations (Starfish, Seashell, Anchor) */
+    .ocean-watermark {
+      position: absolute;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.22;
+      color: #ffffff;
+    }
+    .ocean-watermark.starfish { top: 145px; right: 55px; width: 135px; height: 135px; }
+    .ocean-watermark.seashell { bottom: 390px; left: 48px; width: 130px; height: 130px; }
+    .ocean-watermark.anchor { bottom: 65px; right: 120px; width: 175px; height: 175px; }
+
+    /* Header Title on Poster: 金饌廳 桌次配置圖 */
+    .poster-header {
+      position: absolute;
+      top: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+      z-index: 5;
+      width: 340px;
+      pointer-events: none;
+    }
+    .poster-header-divider {
+      color: rgba(255, 255, 255, 0.92);
+      font-size: 0.9rem;
+      letter-spacing: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin: 4px 0;
+    }
+    .poster-header-divider::before,
+    .poster-header-divider::after {
+      content: "";
+      flex: 1;
+      height: 1.5px;
+      background: rgba(255, 255, 255, 0.85);
+    }
+    .poster-title {
+      font-family: 'Noto Serif TC', serif;
+      font-size: 2.05rem;
+      font-weight: 900;
+      line-height: 1.22;
+      color: #e6b980;
+      text-shadow:
+        -1.5px -1.5px 0 #fff,
+         1.5px -1.5px 0 #fff,
+        -1.5px  1.5px 0 #fff,
+         1.5px  1.5px 0 #fff,
+         0 3px 8px rgba(110, 72, 32, 0.35);
+      letter-spacing: 4px;
+    }
+
+    /* Stage (舞台) & Table Count Label */
+    .poster-stage {
+      position: absolute;
+      top: 196px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 490px;
+      height: 60px;
+      background: #ffffff;
+      border-radius: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.55rem;
+      font-weight: 800;
+      color: var(--navy-text);
+      letter-spacing: 8px;
+      box-shadow: 0 6px 18px rgba(28, 75, 92, 0.14);
+      z-index: 4;
+    }
+
+    .poster-table-counter {
+      position: absolute;
+      top: 210px;
+      right: 34px;
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: #ffffff;
+      text-shadow: 0 2px 6px rgba(20, 65, 80, 0.35);
+      z-index: 5;
+      letter-spacing: 1px;
+    }
+
+    /* L-Shaped Aisle (走道) */
+    .poster-aisle-vertical {
+      position: absolute;
+      left: 46.5%;
+      top: 425px;
+      width: 68px;
+      height: 550px;
+      background: #ffffff;
+      border-radius: 22px 22px 0 22px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--navy-text);
+      line-height: 1.6;
+      box-shadow: 0 6px 18px rgba(28, 75, 92, 0.1);
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    .poster-aisle-horizontal {
+      position: absolute;
+      left: 46.5%;
+      top: 917px;
+      width: 455px;
+      height: 58px;
+      background: #ffffff;
+      border-radius: 0 22px 22px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding-left: 60px;
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--navy-text);
+      letter-spacing: 6px;
+      box-shadow: 0 6px 18px rgba(28, 75, 92, 0.1);
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    /* Bottom Orange Extension Zone (橘色框框座位新增區: 支援動態 5~10 桌) */
+    .orange-extension-zone {
+      position: absolute;
+      left: 48px;
+      right: 48px;
+      top: 1020px;
+      height: 390px;
+      border: 5px solid var(--orange-zone-border);
+      border-radius: 18px;
+      background: rgba(255, 248, 235, 0.18);
+      box-shadow: inset 0 0 24px rgba(245, 158, 11, 0.16), 0 4px 16px rgba(245, 158, 11, 0.15);
+      z-index: 3;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 10px 16px;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .orange-extension-zone.drag-over {
+      background: rgba(254, 243, 199, 0.38);
+      border-color: #d97706;
+    }
+
+    .orange-zone-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      z-index: 6;
+      pointer-events: auto;
+    }
+
+    .orange-zone-badge {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #ffffff;
+      font-size: 0.82rem;
+      font-weight: 800;
+      padding: 4px 12px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 8px rgba(217, 119, 6, 0.35);
+    }
+
+    .orange-zone-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 4px 8px;
+      border-radius: 999px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .orange-zone-btn {
+      border: 1px solid #fcd34d;
+      background: #fffbeb;
+      color: #b45309;
+      font-family: inherit;
+      font-size: 0.76rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .orange-zone-btn:hover {
+      background: #f59e0b;
+      color: #fff;
+      border-color: #f59e0b;
+    }
+    .orange-zone-btn.danger {
+      border-color: #fecaca;
+      background: #fef2f2;
+      color: #dc2626;
+    }
+    .orange-zone-btn.danger:hover {
+      background: #ef4444;
+      color: #fff;
+    }
+
+    .orange-zone-hint {
+      text-align: center;
+      color: rgba(255, 255, 255, 0.95);
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+      pointer-events: none;
+    }
+
+    /* Tables Layer on Poster */
+    .tables-layer {
+      position: absolute;
+      inset: 0;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    /* Individual Table Group (Center Round Table + 10 Surrounding Cinema Seat Boxes) */
+    .table-node {
+      position: absolute;
+      width: 146px;
+      height: 146px;
+      transform: translate(-50%, -50%);
+      pointer-events: auto;
+      cursor: grab;
+      transition: box-shadow 0.15s ease;
+      z-index: 12;
+    }
+    .table-node:active {
+      cursor: grabbing;
+    }
+    .table-node.dragging {
+      z-index: 50;
+      opacity: 0.92;
+      filter: drop-shadow(0 12px 20px rgba(15, 50, 62, 0.38));
+    }
+    .table-node.selected {
+      z-index: 30;
+    }
+    .table-node.dimmed {
+      opacity: 0.28;
+      filter: grayscale(0.4);
+    }
+
+    /* Center Table Circle */
+    .table-circle {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 84px;
+      height: 84px;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      background: var(--tiffany-bg);
+      border: 5px solid #ffffff;
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5), 0 5px 14px rgba(22, 68, 82, 0.22);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 4px;
+      transition: all 0.18s ease;
+    }
+
+    .table-node.main-table .table-circle {
+      background: linear-gradient(145deg, #f8d89c, #e5b567);
+      border-color: #ffffff;
+      box-shadow: 0 0 0 3px #f59e0b, 0 6px 18px rgba(180, 83, 9, 0.3);
+    }
+
+    .table-node.orange-table .table-circle {
+      border-color: #fef3c7;
+      box-shadow: 0 0 0 2.5px #f59e0b, 0 5px 14px rgba(217, 119, 6, 0.25);
+    }
+
+    .table-node.selected .table-circle {
+      border-color: #0d9488;
+      box-shadow: 0 0 0 4px #ffffff, 0 0 0 8px #0d9488, 0 8px 22px rgba(13, 148, 136, 0.45);
+      transform: translate(-50%, -50%) scale(1.05);
+    }
+
+    .table-number-label {
+      font-size: 1.15rem;
+      font-weight: 900;
+      color: var(--navy-text);
+      line-height: 1.1;
+      text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff;
+    }
+
+    .table-alias-label {
+      font-size: 0.66rem;
+      font-weight: 700;
+      color: #133c4a;
+      background: rgba(255, 255, 255, 0.82);
+      padding: 1px 5px;
+      border-radius: 6px;
+      margin-top: 2px;
+      max-width: 72px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .table-occupancy-badge {
+      font-size: 0.62rem;
+      font-weight: 800;
+      color: #0f5257;
+      margin-top: 1px;
+    }
+
+    /* Surrounding 10 Cinema-Style Seat Mini-Boxes */
+    .seat-mini-box {
+      position: absolute;
+      width: 30px;
+      height: 22px;
+      transform: translate(-50%, -50%);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.72);
+      border: 1.5px solid rgba(255, 255, 255, 0.95);
+      box-shadow: 0 2px 5px rgba(20, 60, 75, 0.16);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.62rem;
+      font-weight: 700;
+      color: #475569;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      padding: 0 2px;
+      overflow: visible;
+    }
+    .seat-mini-box:hover {
+      transform: translate(-50%, -50%) scale(1.22);
+      z-index: 25;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+    }
+
+    /* Occupied Seat */
+    .seat-mini-box.occupied {
+      background: #ffffff;
+      border-color: #0d9488;
+      color: #0f172a;
+      font-weight: 800;
+    }
+
+    /* Vegetarian Seat */
+    .seat-mini-box.diet-veg {
+      background: #ecfdf5;
+      border-color: #10b981;
+      color: #065f46;
+    }
+
+    /* Child Seat Mode (兒童座椅更換專屬顯示) */
+    .seat-mini-box.child-seat {
+      background: linear-gradient(135deg, #fef3c7, #fde68a);
+      border: 2px solid #d97706;
+      border-radius: 9px 9px 4px 4px;
+      color: #92400e;
+      box-shadow: 0 0 0 1.5px #ffffff, 0 3px 8px rgba(217, 119, 6, 0.38);
+    }
+
+    /* Seat Text Truncation */
+    .seat-mini-text {
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      line-height: 1;
+    }
+
+    /* Corner Micro Badges on Mini Seat (🥗 / 🎁 / 👶) */
+    .seat-micro-badges {
+      position: absolute;
+      top: -7px;
+      right: -6px;
+      display: flex;
+      gap: 1px;
+      pointer-events: none;
+    }
+    .micro-badge {
+      font-size: 0.56rem;
+      line-height: 1;
+      background: #ffffff;
+      border-radius: 999px;
+      padding: 1px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+
+    /* Right Side Inspector & Cinema Seat Editor Panel */
+    .inspector-panel {
+      background: rgba(255, 255, 255, 0.96);
+      border-radius: 22px;
+      border: 1px solid rgba(107, 178, 191, 0.4);
+      box-shadow: var(--shadow-soft);
+      position: sticky;
+      top: 90px;
+      max-height: calc(100vh - 108px);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    @media (max-width: 1200px) {
+      .inspector-panel {
+        position: static;
+        max-height: none;
+      }
+    }
+
+    .inspector-header {
+      padding: 14px 18px;
+      background: linear-gradient(135deg, #eff8fa 0%, #e0f2f6 100%);
+      border-bottom: 1px solid #cde7ed;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .inspector-title-wrap h2 {
+      font-size: 1.08rem;
+      font-weight: 800;
+      color: var(--navy-text);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .inspector-tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      background: #f1f5f9;
+      padding: 4px;
+      margin: 10px 16px 0;
+      border-radius: 12px;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .tab-btn {
+      border: none;
+      background: transparent;
+      padding: 7px 8px;
+      border-radius: 9px;
+      font-family: inherit;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #64748b;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .tab-btn.active {
+      background: #ffffff;
+      color: var(--navy-text);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.07);
+    }
+
+    .inspector-body {
+      padding: 14px 16px 20px;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    /* Table Meta Fields (桌號 & 座位別稱 & 區域) */
+    .meta-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+      gap: 10px;
+      background: #f8fafc;
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+    }
+    .field-group label {
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: #475569;
+    }
+    .field-input {
+      width: 100%;
+      min-width: 0;
+      padding: 7px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 9px;
+      font-family: inherit;
+      font-size: 0.86rem;
+      font-weight: 600;
+      color: #0f172a;
+      background: #fff;
+    }
+    .field-input:focus {
+      outline: none;
+      border-color: var(--primary-btn);
+      box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.14);
+    }
+
+    /* Cinema-Style Zoomed Circular Table Map inside Inspector */
+    .cinema-wheel-box {
+      position: relative;
+      width: 100%;
+      height: 315px;
+      background: radial-gradient(circle at center, #eef8fa 0%, #d8eef3 100%);
+      border: 1.5px solid #bae0e8;
+      border-radius: 18px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .cinema-center-table {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 112px;
+      height: 112px;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      background: var(--tiffany-bg);
+      border: 5px solid #ffffff;
+      box-shadow: 0 6px 18px rgba(28, 75, 92, 0.18);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 6px;
+    }
+
+    .cinema-seat-slot {
+      position: absolute;
+      width: 78px;
+      height: 46px;
+      transform: translate(-50%, -50%);
+      background: #ffffff;
+      border: 2px solid #cbd5e1;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2px 4px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      box-shadow: 0 3px 8px rgba(15, 23, 42, 0.08);
+    }
+    .cinema-seat-slot:hover {
+      border-color: #0d9488;
+      transform: translate(-50%, -50%) scale(1.06);
+      z-index: 5;
+    }
+    .cinema-seat-slot.active-seat {
+      border-color: #0d9488;
+      box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.28), 0 4px 12px rgba(13, 148, 136, 0.25);
+      z-index: 6;
+    }
+    .cinema-seat-slot.swap-source {
+      border-style: dashed;
+      border-color: #f59e0b;
+      background: #fffbeb;
+      animation: pulseSwap 1.2s infinite;
+    }
+    @keyframes pulseSwap {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+      50% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
+    }
+
+    .cinema-seat-slot.is-child {
+      background: linear-gradient(135deg, #fef3c7, #fde68a);
+      border-color: #d97706;
+      border-radius: 14px 14px 6px 6px;
+    }
+    .cinema-seat-slot.is-veg {
+      border-bottom: 4px solid #10b981;
+    }
+
+    .cinema-seat-top {
+      font-size: 0.66rem;
+      font-weight: 800;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .cinema-seat-name {
+      font-size: 0.76rem;
+      font-weight: 800;
+      color: #0f172a;
+      max-width: 68px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .cinema-seat-name.empty {
+      color: #94a3b8;
+      font-weight: 500;
+    }
+
+    /* Seat Editor Card */
+    .seat-editor-card {
+      background: #f8fafc;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 14px;
+      padding: 13px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .seat-editor-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 8px;
+    }
+    .seat-editor-title {
+      font-size: 0.9rem;
+      font-weight: 800;
+      color: var(--navy-text);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .toggle-pills {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .toggle-option {
+      flex: 1;
+      min-width: 110px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1.5px solid #cbd5e1;
+      background: #ffffff;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .toggle-option input {
+      display: none;
+    }
+    .toggle-option.active-meat {
+      background: var(--meat-bg);
+      border-color: var(--meat-pink);
+      color: #9f1239;
+    }
+    .toggle-option.active-veg {
+      background: var(--veg-bg);
+      border-color: var(--veg-green);
+      color: #065f46;
+    }
+    .toggle-option.active-child {
+      background: var(--child-bg);
+      border-color: var(--child-amber);
+      color: #92400e;
+    }
+    .toggle-option.active-gift {
+      background: var(--gift-bg);
+      border-color: var(--gift-purple);
+      color: #5b21b6;
+    }
+
+    /* All 10 Seats Quick List inside Inspector */
+    .seat-list-compact {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .seat-row-item {
+      display: grid;
+      grid-template-columns: 32px 1fr auto;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.14s;
+    }
+    .seat-row-item:hover {
+      border-color: #94a3b8;
+    }
+    .seat-row-item.active {
+      border-color: #0d9488;
+      background: #f0fdfa;
+    }
+    .seat-row-num {
+      width: 26px;
+      height: 26px;
+      border-radius: 7px;
+      background: #e2e8f0;
+      color: #334155;
+      font-size: 0.76rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .seat-row-item.is-child .seat-row-num {
+      background: #fef3c7;
+      color: #b45309;
+      border: 1.5px solid #f59e0b;
+    }
+
+    /* Batch Textarea & RSVP List */
+    .batch-textarea {
+      width: 100%;
+      min-height: 195px;
+      padding: 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 0.84rem;
+      line-height: 1.55;
+      resize: vertical;
+    }
+
+    .rsvp-card-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 360px;
+      overflow-y: auto;
+    }
+    .rsvp-guest-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 9px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .rsvp-guest-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .rsvp-guest-name {
+      font-size: 0.88rem;
+      font-weight: 800;
+      color: #0f172a;
+    }
+    .rsvp-guest-meta {
+      font-size: 0.75rem;
+      color: #64748b;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    /* Toast Notification */
+    .toast-container {
+      position: fixed;
+      bottom: 22px;
+      right: 22px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .toast-msg {
+      background: #0f172a;
+      color: #ffffff;
+      padding: 10px 16px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      animation: slideInUp 0.2s ease;
+    }
+    @keyframes slideInUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation & Live Summary Bar -->
+  <header class="top-bar">
+    <div class="top-bar-inner">
+      <div class="brand-group">
+        <div class="brand-logo" aria-hidden="true">🪑</div>
+        <div class="brand-titles">
+          <h1>金饌廳｜婚宴座位安排系統</h1>
+          <div class="brand-sub">
+            <span>獨立部署版本（支援拖曳排桌・10人電影院選位・Excel 與雲端雙向同步）</span>
+            <span id="sync-status-badge" class="sync-badge saved">✓ 已自動儲存草稿</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Statistics Strip -->
+      <div class="stats-strip" aria-label="全場即時統計">
+        <div class="stat-pill" title="目前總桌數（主廳＋橘色擴充區）">
+          <span>總桌數</span>
+          <strong id="stat-table-count">15</strong>
+          <span>桌</span>
+        </div>
+        <div class="stat-pill" title="已安排姓名之座位數 / 全場總座位數">
+          <span>已排入座</span>
+          <strong id="stat-seated-count">0 / 150</strong>
+          <span>位</span>
+        </div>
+        <div class="stat-pill" title="葷食座位數">
+          <span>🥩 葷食</span>
+          <strong id="stat-meat-count">0</strong>
+        </div>
+        <div class="stat-pill veg" title="素食座位數">
+          <span>🥗 素食</span>
+          <strong id="stat-veg-count">0</strong>
+        </div>
+        <div class="stat-pill child" title="兒童座椅總數">
+          <span>👶 兒童椅</span>
+          <strong id="stat-child-count">0</strong>
+        </div>
+        <div class="stat-pill gift" title="已標記婚禮小物或小驚喜之座位數">
+          <span>🎁 婚禮小物/驚喜</span>
+          <strong id="stat-gift-count">0</strong>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="toolbar-actions">
+        <button type="button" id="btn-add-main-table" class="btn">＋ 新增主廳桌</button>
+        <button type="button" id="btn-add-orange-table" class="btn btn-orange">＋ 橘色區新增桌</button>
+        <button type="button" id="btn-export-excel" class="btn">📥 匯出 Excel (.xlsx)</button>
+        <button type="button" id="btn-import-excel-trigger" class="btn">📤 匯入 Excel/JSON</button>
+        <input type="file" id="input-import-file" accept=".xlsx,.xls,.json" class="hidden" aria-label="匯入座位設定檔">
+        <button type="button" id="btn-load-cloud" class="btn" title="從 Google 試算表讀取最新桌次分配">🔄 雲端讀取</button>
+        <button type="button" id="btn-save-cloud" class="btn btn-primary" title="將目前所有桌次與 10 人座位明細同步至 Google 試算表">💾 儲存至雲端試算表</button>
+      </div>
+    </div>
+
+    <!-- Sub-toolbar: Search, Highlight Filters, Zoom, Grid Snap -->
+    <div class="sub-toolbar">
+      <div class="search-and-filters">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="input-search-guest" placeholder="搜尋賓客姓名、桌號、別稱或小物..." aria-label="搜尋賓客或桌次">
+          <button type="button" id="btn-clear-search" class="search-clear" title="清除搜尋">✕</button>
+        </div>
+
+        <div class="chip-group" role="group" aria-label="高亮篩選模式">
+          <button type="button" class="chip-btn active" data-highlight="all">全部顯示</button>
+          <button type="button" class="chip-btn" data-highlight="veg">🥗 素食高亮</button>
+          <button type="button" class="chip-btn" data-highlight="child">👶 兒童椅高亮</button>
+          <button type="button" class="chip-btn" data-highlight="gift">🎁 婚禮小物高亮</button>
+          <button type="button" class="chip-btn" data-highlight="empty">⚪ 空位高亮</button>
+        </div>
+      </div>
+
+      <div class="search-and-filters">
+        <label style="font-size: 0.8rem; font-weight: 600; color: #475569; display: inline-flex; align-items: center; gap: 5px; cursor: pointer;">
+          <input type="checkbox" id="chk-grid-snap" checked>
+          <span>智慧網格吸附</span>
+        </label>
+        <div class="chip-group" role="group" aria-label="畫布縮放">
+          <button type="button" id="btn-zoom-out" class="chip-btn" title="縮小平面圖">－</button>
+          <span id="label-zoom-level" style="padding: 4px 8px; font-size: 0.78rem; font-weight: 700; color: #334155;">100%</span>
+          <button type="button" id="btn-zoom-in" class="chip-btn" title="放大平面圖">＋</button>
+          <button type="button" id="btn-zoom-fit" class="chip-btn">適應寬度</button>
+        </div>
+        <button type="button" id="btn-reset-default-layout" class="btn btn-sm btn-danger" title="重置回金饌廳預設桌次配置">↺ 重置預設配置</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Workspace: Left Poster Map + Right Cinema Seat Inspector -->
+  <main class="workspace">
+    <!-- Left:的金饌廳桌次配置圖 -->
+    <div class="hall-scroll-wrapper" id="hall-scroll-wrapper">
+      <div class="banquet-poster" id="banquet-poster" aria-label="金饌廳桌次配置平面圖">
+        <div class="poster-inner-frame"></div>
+
+        <!-- Four Vintage Corner Filigree SVGs -->
+        <svg class="corner-ornament tl" viewBox="0 0 100 100" fill="none" stroke="white" stroke-width="3">
+          <path d="M4 95 V30 C4 14 14 4 30 4 H95" stroke-width="3.5"/>
+          <path d="M12 75 V34 C12 20 20 12 34 12 H75" stroke-width="2"/>
+          <circle cx="26" cy="26" r="8" fill="white" fill-opacity="0.3"/>
+          <path d="M12 48 C28 48 34 32 22 22 C14 15 36 12 48 28" stroke-linecap="round"/>
+        </svg>
+        <svg class="corner-ornament tr" viewBox="0 0 100 100" fill="none" stroke="white" stroke-width="3">
+          <path d="M4 95 V30 C4 14 14 4 30 4 H95" stroke-width="3.5"/>
+          <path d="M12 75 V34 C12 20 20 12 34 12 H75" stroke-width="2"/>
+          <circle cx="26" cy="26" r="8" fill="white" fill-opacity="0.3"/>
+          <path d="M12 48 C28 48 34 32 22 22 C14 15 36 12 48 28" stroke-linecap="round"/>
+        </svg>
+        <svg class="corner-ornament bl" viewBox="0 0 100 100" fill="none" stroke="white" stroke-width="3">
+          <path d="M4 95 V30 C4 14 14 4 30 4 H95" stroke-width="3.5"/>
+          <path d="M12 75 V34 C12 20 20 12 34 12 H75" stroke-width="2"/>
+          <circle cx="26" cy="26" r="8" fill="white" fill-opacity="0.3"/>
+          <path d="M12 48 C28 48 34 32 22 22 C14 15 36 12 48 28" stroke-linecap="round"/>
+        </svg>
+        <svg class="corner-ornament br" viewBox="0 0 100 100" fill="none" stroke="white" stroke-width="3">
+          <path d="M4 95 V30 C4 14 14 4 30 4 H95" stroke-width="3.5"/>
+          <path d="M12 75 V34 C12 20 20 12 34 12 H75" stroke-width="2"/>
+          <circle cx="26" cy="26" r="8" fill="white" fill-opacity="0.3"/>
+          <path d="M12 48 C28 48 34 32 22 22 C14 15 36 12 48 28" stroke-linecap="round"/>
+        </svg>
+
+        <!-- Ocean Theme Watermarks -->
+        <svg class="ocean-watermark starfish" viewBox="0 0 100 100" fill="currentColor">
+          <path d="M50 5 L61 36 L94 38 L68 58 L77 90 L50 72 L23 90 L32 58 L6 38 L39 36 Z"/>
+        </svg>
+        <svg class="ocean-watermark seashell" viewBox="0 0 100 100" fill="currentColor">
+          <path d="M50 88 C30 88 12 68 15 44 C18 22 34 12 50 12 C66 12 82 22 85 44 C88 68 70 88 50 88 Z"/>
+        </svg>
+        <svg class="ocean-watermark anchor" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="6">
+          <circle cx="50" cy="20" r="9"/>
+          <line x1="50" y1="29" x2="50" y2="85"/>
+          <line x1="30" y1="42" x2="70" y2="42"/>
+          <path d="M20 65 C20 85 80 85 80 65"/>
+        </svg>
+
+        <!-- Poster Title -->
+        <div class="poster-header">
+          <div class="poster-header-divider">❖ ─── ❖</div>
+          <div class="poster-title">金饌廳<br>桌次配置圖</div>
+          <div class="poster-header-divider">❖ ─── ❖</div>
+        </div>
+
+        <!-- Stage & Dynamic Table Count -->
+        <div class="poster-stage">舞台</div>
+        <div class="poster-table-counter" id="poster-table-counter">桌數：15桌</div>
+
+        <!-- L-Shaped Aisle -->
+        <div class="poster-aisle-vertical">
+          <span>走</span>
+          <span>道</span>
+        </div>
+        <div class="poster-aisle-horizontal">走道</div>
+
+        <!-- Orange Extension Box (下方橘色框框也為座位新增區：可動態新增 5~10 桌) -->
+        <div class="orange-extension-zone" id="orange-extension-zone">
+          <div class="orange-zone-header">
+            <span class="orange-zone-badge">
+              🍊 座位新增擴充區（目前 <span id="orange-zone-count">0</span> 桌）
+            </span>
+            <div class="orange-zone-controls">
+              <button type="button" class="orange-zone-btn" id="btn-orange-add-1" title="在橘色框框新增 1 桌">＋1 桌</button>
+              <button type="button" class="orange-zone-btn" id="btn-orange-preset-5" title="將橘色框框設定為 5 桌">設為 5 桌</button>
+              <button type="button" class="orange-zone-btn" id="btn-orange-preset-10" title="將橘色框框設定為 10 桌">設為 10 桌</button>
+              <button type="button" class="orange-zone-btn danger" id="btn-orange-clear" title="清空橘色擴充區所有桌子">清空擴充區</button>
+            </div>
+          </div>
+          <div class="orange-zone-hint" id="orange-zone-hint">
+            可點擊上方按鈕快速新增 5~10 桌，或直接將任一圓桌拖曳至此橘色框框區域內自由排列
+          </div>
+        </div>
+
+        <!-- Interactive Draggable Tables Layer -->
+        <div class="tables-layer" id="tables-layer"></div>
+      </div>
+    </div>
+
+    <!-- Right: Selected Table & 10-Seat Cinema Editor Panel -->
+    <aside class="inspector-panel" id="inspector-panel" aria-label="桌次與座位詳細編排面板">
+      <div class="inspector-header">
+        <div class="inspector-title-wrap">
+          <h2 id="inspector-heading">🪑 主桌（主桌）</h2>
+          <p id="inspector-subheading" style="font-size: 0.76rem; color: #475569;">點擊圓桌周圍小格可編輯座位或互換位置</p>
+        </div>
+        <div style="display: flex; gap: 6px;">
+          <button type="button" id="btn-delete-selected-table" class="btn btn-sm btn-danger" title="刪除此桌">🗑️ 刪桌</button>
+        </div>
+      </div>
+
+      <!-- Inspector Mode Tabs -->
+      <div class="inspector-tabs" role="tablist">
+        <button type="button" class="tab-btn active" data-tab="seat-map" role="tab" aria-selected="true">🎯 座位選位編排</button>
+        <button type="button" class="tab-btn" data-tab="batch-list" role="tab" aria-selected="false">📋 整桌名單更新</button>
+        <button type="button" class="tab-btn" data-tab="rsvp-import" role="tab" aria-selected="false">💌 報名清單帶入</button>
+      </div>
+
+      <!-- Tab 1: Cinema-Style 10-Seat Editor & Table Meta -->
+      <div class="inspector-body" id="tab-panel-seat-map">
+        <!-- Table Number & Alias Inputs -->
+        <div class="meta-grid">
+          <div class="field-group">
+            <label for="input-table-number">座位桌號</label>
+            <input type="text" id="input-table-number" class="field-input" placeholder="如：主桌、02、16">
+          </div>
+          <div class="field-group">
+            <label for="input-table-alias">座位別稱（桌名）</label>
+            <input type="text" id="input-table-alias" class="field-input" placeholder="如：男方主桌、大學同學">
+          </div>
+        </div>
+
+        <!-- Zoomed Cinema Circular Seat Map -->
+        <div class="cinema-wheel-box" id="cinema-wheel-box">
+          <div class="cinema-center-table" id="cinema-center-table">
+            <div style="font-size: 1.05rem; font-weight: 900; color: #1c4b5c;" id="wheel-table-num">主桌</div>
+            <div style="font-size: 0.72rem; font-weight: 700; color: #334155;" id="wheel-table-alias">新人與雙方主婚人</div>
+            <div style="font-size: 0.68rem; font-weight: 800; color: #0d9488; margin-top: 3px;" id="wheel-table-stats">0 / 10 位</div>
+          </div>
+          <div id="cinema-wheel-seats"></div>
+        </div>
+
+        <!-- Selected Seat Detailed Editor -->
+        <div class="seat-editor-card" id="seat-editor-card">
+          <div class="seat-editor-header">
+            <div class="seat-editor-title">
+              <span id="editor-seat-badge">座位 #1</span>
+              <span id="editor-seat-status" style="font-size: 0.75rem; color: #64748b; font-weight: 600;">（空位）</span>
+            </div>
+            <div style="display: flex; gap: 6px;">
+              <button type="button" id="btn-swap-seat-mode" class="btn btn-sm" title="點擊後再點另一個座位即可對調位置">⇄ 與他座換位</button>
+              <button type="button" id="btn-clear-single-seat" class="btn btn-sm btn-danger" title="清空此座位">清空此座</button>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label for="input-seat-guest-name">座位人名</label>
+            <input type="text" id="input-seat-guest-name" class="field-input" placeholder="輸入賓客姓名（例如：王小明）">
+          </div>
+
+          <div class="field-group">
+            <label>葷素選擇與兒童座椅（勾選兒童椅將更換平面圖顯示）</label>
+            <div class="toggle-pills">
+              <button type="button" id="btn-seat-diet-meat" class="toggle-option active-meat">🥩 葷食</button>
+              <button type="button" id="btn-seat-diet-veg" class="toggle-option">🥗 素食</button>
+              <button type="button" id="btn-seat-child-toggle" class="toggle-option">👶 兒童座椅</button>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label>婚禮小物或小驚喜（每個座位皆可獨立標記）</label>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <button type="button" id="btn-seat-gift-toggle" class="toggle-option" style="flex: 0 0 auto;">🎁 放置小物/驚喜</button>
+              <input type="text" id="input-seat-gift-note" class="field-input" style="flex: 1;" placeholder="小物或驚喜內容（如：捧花禮、手寫卡）">
+            </div>
+          </div>
+        </div>
+
+        <!-- 10 Seats Overview List -->
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span style="font-size: 0.8rem; font-weight: 800; color: #334155;">本桌 10 個座位清單（可點擊快速切換）</span>
+          </div>
+          <div class="seat-list-compact" id="seat-list-compact"></div>
+        </div>
+      </div>
+
+      <!-- Tab 2: Whole-Table Batch List Update (選整桌更新人數清單) -->
+      <div class="inspector-body hidden" id="tab-panel-batch-list">
+        <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 10px 12px; font-size: 0.78rem; color: #1e3a8a; line-height: 1.5;">
+          <strong>💡 整桌 10 人清單快速編輯說明：</strong><br>
+          每行對應本桌的第 1 ~ 10 號座位。您可以只填姓名，或用逗號加上標記：<br>
+          <code>王大明</code>（預設葷食）<br>
+          <code>林小美, 素</code>（自動設為🥗素食）<br>
+          <code>王小寶, 兒童椅, 畫本驚喜</code>（自動設為👶兒童椅＋🎁婚禮小物）
+        </div>
+
+        <div class="field-group">
+          <label for="textarea-batch-seats">本桌 1~10 號座位名單（每行 1 位，空白行代表空位）</label>
+          <textarea id="textarea-batch-seats" class="batch-textarea" placeholder="第1位姓名&#10;第2位姓名, 素&#10;第3位姓名, 兒童椅&#10;第4位姓名, 小物:手寫卡片"></textarea>
+        </div>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+          <button type="button" id="btn-apply-batch-text" class="btn btn-primary" style="flex: 1;">✓ 套用名單至本桌 (1~10座)</button>
+        </div>
+
+        <div style="border-top: 1px solid #e2e8f0; padding-top: 12px; display: flex; flex-direction: column; gap: 8px;">
+          <span style="font-size: 0.8rem; font-weight: 800; color: #334155;">整桌快速批次設定</span>
+          <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+            <button type="button" id="btn-table-all-meat" class="btn btn-sm">🥩 本桌在座全設葷食</button>
+            <button type="button" id="btn-table-all-veg" class="btn btn-sm">🥗 本桌在座全設素食</button>
+            <button type="button" id="btn-table-add-child" class="btn btn-sm">👶 新增 1 張兒童椅於末座</button>
+            <button type="button" id="btn-table-all-gift" class="btn btn-sm">🎁 本桌在座全加小物</button>
+            <button type="button" id="btn-table-clear-all" class="btn btn-sm btn-danger">🗑️ 清空本桌所有座位</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 3: Import from Cloud RSVP (從報名清單帶入) -->
+      <div class="inspector-body hidden" id="tab-panel-rsvp-import">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+          <span style="font-size: 0.8rem; font-weight: 700; color: #475569;">從 Google 試算表「報名清單」自動展開帶入本桌</span>
+          <button type="button" id="btn-fetch-rsvp" class="btn btn-sm">🔄 重新同步報名清單</button>
+        </div>
+        <div class="rsvp-card-list" id="rsvp-card-list"></div>
+      </div>
+    </aside>
+  </main>
+
+  <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+  <!-- Independent Script for Wedding Seating Arrangement ONLY -->
+  <script src="seating.js"></script>
+</body>
+</html>

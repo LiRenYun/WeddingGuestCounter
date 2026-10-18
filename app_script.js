@@ -201,17 +201,87 @@ function doPost(e) {
     // ---------------------------------------------------------------------
     } else if (formType === 'seating') {
       var sheet = getOrCreateSheet(ss, "桌次分配");
-      if (sheet.getLastRow() === 0) {
-        sheet.appendRow(["姓名", "桌號"]);
-      }
+      var formattedSeatingTime = formatCustomDateTime(timestamp);
+      var seatingHeaders = [
+        "姓名", "桌號", "座位別稱", "座位編號", "飲食",
+        "兒童座椅", "婚禮小物", "小物備註", "桌次ID",
+        "區域", "X座標", "Y座標", "更新時間"
+      ];
 
-      var targetName = (data.name || "").trim();
-      var tableNumber = data.table || "";
+      if (data.action === 'saveAll' && Array.isArray(data.tables)) {
+        // 整批覆寫「桌次分配」分頁（保留標題列並展開每桌 10 個座位）
+        sheet.clearContents();
+        var rowsToWrite = [seatingHeaders];
 
-      // 若名單中已有此姓名則更新桌號；若無則新增一列
-      var updated = updateSeatingTable(sheet, targetName, tableNumber);
-      if (!updated) {
-        sheet.appendRow([targetName, tableNumber]);
+        for (var tIdx = 0; tIdx < data.tables.length; tIdx++) {
+          var tbl = data.tables[tIdx] || {};
+          var tblId = tbl.id || ("T" + (tIdx + 1));
+          var tblNumber = tbl.tableNumber !== undefined ? String(tbl.tableNumber) : "";
+          var tblAlias = tbl.alias !== undefined ? String(tbl.alias) : "";
+          var tblZone = tbl.zone || "main";
+          var tblX = tbl.x !== undefined ? Number(tbl.x) : 50;
+          var tblY = tbl.y !== undefined ? Number(tbl.y) : 50;
+          var seats = Array.isArray(tbl.seats) ? tbl.seats : [];
+          var seatCap = Math.max(seats.length, 10);
+
+          for (var sIdx = 0; sIdx < seatCap; sIdx++) {
+            var seat = seats[sIdx] || {};
+            var seatNo = seat.seatIndex || (sIdx + 1);
+            var guestName = (seat.name || "").toString().trim();
+            var dietStr = (seat.diet === 'veg' || seat.diet === '素食') ? "素食" : "葷食";
+            var childStr = (seat.isChildSeat === true || seat.isChildSeat === '是') ? "是" : "否";
+            var giftStr = (seat.hasGift === true || seat.hasGift === '是') ? "是" : "否";
+            var giftNoteStr = (seat.giftNote || "").toString().trim();
+
+            rowsToWrite.push([
+              guestName,
+              tblNumber,
+              tblAlias,
+              seatNo,
+              dietStr,
+              childStr,
+              giftStr,
+              giftNoteStr,
+              tblId,
+              tblZone,
+              tblX,
+              tblY,
+              formattedSeatingTime
+            ]);
+          }
+        }
+
+        if (rowsToWrite.length > 0) {
+          sheet.getRange(1, 1, rowsToWrite.length, seatingHeaders.length).setValues(rowsToWrite);
+        }
+      } else {
+        // 向下相容：舊版單筆更新或新增（姓名 + 桌號）
+        if (sheet.getLastRow() === 0) {
+          sheet.appendRow(seatingHeaders);
+        }
+
+        var targetName = (data.name || "").trim();
+        var tableNumber = data.table || "";
+
+        // 若名單中已有此姓名則更新桌號；若無則新增一列
+        var updated = updateSeatingTable(sheet, targetName, tableNumber);
+        if (!updated) {
+          sheet.appendRow([
+            targetName,
+            tableNumber,
+            data.alias || "",
+            data.seatIndex || "",
+            data.diet || "葷食",
+            data.isChildSeat ? "是" : "否",
+            data.hasGift ? "是" : "否",
+            data.giftNote || "",
+            data.tableId || "",
+            data.zone || "main",
+            data.x !== undefined ? data.x : "",
+            data.y !== undefined ? data.y : "",
+            formattedSeatingTime
+          ]);
+        }
       }
     }
 

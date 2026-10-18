@@ -1,0 +1,3306 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>金饌廳 桌次配置圖｜婚宴座位安排系統</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🪑</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;900&family=Noto+Serif+TC:wght@600;700;900&display=swap" rel="stylesheet">
+  <!-- SheetJS for .xlsx Export & Import -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      --tiffany-bg: #8fc9d3;
+      --tiffany-deep: #6bb2bf;
+      --tiffany-darker: #3e8694;
+      --tiffany-card: rgba(255, 255, 255, 0.94);
+      --gold-title: #f3c892;
+      --gold-stroke: #8a5a2b;
+      --navy-text: #1c4b5c;
+      --slate-text: #1f2937;
+      --muted-text: #64748b;
+      --orange-zone-border: #f59e0b;
+      --orange-zone-bg: rgba(245, 158, 11, 0.12);
+      --veg-green: #10b981;
+      --veg-bg: #d1fae5;
+      --meat-pink: #f43f5e;
+      --meat-bg: #ffe4e6;
+      --child-amber: #f59e0b;
+      --child-bg: #fef3c7;
+      --gift-purple: #8b5cf6;
+      --gift-bg: #ede9fe;
+      --primary-btn: #0d9488;
+      --primary-btn-hover: #0f766e;
+      --danger-btn: #ef4444;
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 22px;
+      --shadow-soft: 0 10px 30px -5px rgba(20, 70, 85, 0.18);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(145deg, #dff1f4 0%, #c6e6ec 50%, #e7f4f6 100%);
+      color: var(--slate-text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* Top Control Bar & Dashboard */
+    .top-bar {
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(107, 178, 191, 0.35);
+      padding: 10px 18px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 4px 16px rgba(28, 75, 92, 0.08);
+    }
+
+    .top-bar-inner {
+      max-width: 1640px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #5da7b5, #2b7280);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.35rem;
+      box-shadow: 0 4px 10px rgba(43, 114, 128, 0.25);
+    }
+
+    .brand-titles h1 {
+      font-family: 'Noto Serif TC', serif;
+      font-size: 1.25rem;
+      font-weight: 900;
+      color: var(--navy-text);
+      letter-spacing: 0.5px;
+    }
+
+    .brand-sub {
+      font-size: 0.78rem;
+      color: var(--muted-text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sync-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 2px 9px;
+      border-radius: 999px;
+      font-size: 0.74rem;
+      font-weight: 600;
+      background: #e2e8f0;
+      color: #475569;
+    }
+    .sync-badge.saved {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    .sync-badge.dirty {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    .sync-badge.saving {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+
+    /* Live Statistics Pills */
+    .stats-strip {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .stat-pill {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 5px 12px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: #334155;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .stat-pill strong {
+      font-size: 0.98rem;
+      font-weight: 800;
+      color: var(--navy-text);
+      font-variant-numeric: tabular-nums;
+    }
+    .stat-pill.veg strong { color: #059669; }
+    .stat-pill.child strong { color: #d97706; }
+    .stat-pill.gift strong { color: #7c3aed; }
+
+    /* Toolbar Buttons */
+    .toolbar-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .btn {
+      border: 1px solid transparent;
+      border-radius: 10px;
+      padding: 7px 13px;
+      font-family: inherit;
+      font-size: 0.84rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.16s ease;
+      background: #fff;
+      color: #334155;
+      border-color: #cbd5e1;
+      white-space: nowrap;
+    }
+    .btn:hover {
+      background: #f1f5f9;
+      transform: translateY(-1px);
+    }
+    .btn:active {
+      transform: translateY(0);
+    }
+    .btn:focus-visible {
+      outline: 2px solid var(--navy-text);
+      outline-offset: 2px;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #0d9488, #0f766e);
+      color: #fff;
+      border-color: transparent;
+      box-shadow: 0 3px 10px rgba(13, 148, 136, 0.28);
+    }
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #0f766e, #115e59);
+    }
+    .btn-orange {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #fff;
+      border-color: transparent;
+      box-shadow: 0 3px 10px rgba(245, 158, 11, 0.28);
+    }
+    .btn-orange:hover {
+      background: linear-gradient(135deg, #d97706, #b45309);
+    }
+    .btn-danger {
+      background: #fef2f2;
+      color: #dc2626;
+      border-color: #fecaca;
+    }
+    .btn-danger:hover {
+      background: #fee2e2;
+    }
+    .btn-sm {
+      padding: 4px 9px;
+      font-size: 0.78rem;
+      border-radius: 8px;
+    }
+
+    /* Sub-toolbar: Filter & Display Mode & Search */
+    .sub-toolbar {
+      max-width: 1640px;
+      width: 100%;
+      margin: 8px auto 0;
+      padding-top: 8px;
+      border-top: 1px dashed #e2e8f0;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .search-and-filters {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .search-box {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .search-box input {
+      padding: 6px 28px 6px 30px;
+      border: 1px solid #cbd5e1;
+      border-radius: 999px;
+      font-size: 0.83rem;
+      width: 210px;
+      font-family: inherit;
+      background: #fff;
+    }
+    .search-box input:focus {
+      outline: none;
+      border-color: var(--primary-btn);
+      box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
+    }
+    .search-icon {
+      position: absolute;
+      left: 10px;
+      font-size: 0.85rem;
+      color: #94a3b8;
+      pointer-events: none;
+    }
+    .search-clear {
+      position: absolute;
+      right: 8px;
+      background: none;
+      border: none;
+      font-size: 0.85rem;
+      color: #94a3b8;
+      cursor: pointer;
+      display: none;
+    }
+
+    .chip-group {
+      display: inline-flex;
+      background: #f1f5f9;
+      padding: 3px;
+      border-radius: 10px;
+      gap: 3px;
+    }
+    .chip-btn {
+      border: none;
+      background: transparent;
+      padding: 4px 10px;
+      border-radius: 7px;
+      font-family: inherit;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #475569;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .chip-btn.active {
+      background: #fff;
+      color: var(--navy-text);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    }
+
+    /* Main Workspace Layout */
+    .workspace {
+      flex: 1;
+      max-width: 1640px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 16px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 460px;
+      gap: 18px;
+      align-items: start;
+    }
+
+    @media (max-width: 1200px) {
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Banquet Hall Poster Container (Matches Screenshot Aspect & Tiffany Theme) */
+    .hall-scroll-wrapper {
+      width: 100%;
+      overflow: auto;
+      display: flex;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.45);
+      border-radius: 26px;
+      padding: 16px;
+      box-shadow: inset 0 2px 10px rgba(28, 75, 92, 0.06);
+    }
+
+    .banquet-poster {
+      position: relative;
+      width: 920px;
+      min-width: 920px;
+      height: 1520px;
+      background-color: var(--tiffany-bg);
+      background-image:
+        radial-gradient(circle at 85% 12%, rgba(255, 255, 255, 0.18) 0%, transparent 18%),
+        radial-gradient(circle at 14% 72%, rgba(255, 255, 255, 0.14) 0%, transparent 16%),
+        repeating-radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.06) 0, rgba(255, 255, 255, 0.06) 2px, transparent 2px, transparent 18px);
+      border-radius: 44px;
+      border: 6px solid #e9f6f8;
+      box-shadow: 0 20px 50px rgba(22, 68, 82, 0.25), inset 0 0 0 3px rgba(255, 255, 255, 0.65);
+      user-select: none;
+      overflow: hidden;
+      transform-origin: top center;
+      transition: transform 0.2s ease;
+    }
+
+    /* Inner decorative border frame */
+    .poster-inner-frame {
+      position: absolute;
+      inset: 14px;
+      border: 2.5px solid rgba(255, 255, 255, 0.85);
+      border-radius: 34px;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    /* Vintage Corner Filigree Ornaments */
+    .corner-ornament {
+      position: absolute;
+      width: 110px;
+      height: 110px;
+      pointer-events: none;
+      z-index: 3;
+      opacity: 0.92;
+    }
+    .corner-ornament.tl { top: 18px; left: 18px; }
+    .corner-ornament.tr { top: 18px; right: 18px; transform: scaleX(-1); }
+    .corner-ornament.bl { bottom: 18px; left: 18px; transform: scaleY(-1); }
+    .corner-ornament.br { bottom: 18px; right: 18px; transform: scale(-1, -1); }
+
+    /* Ocean Watermark Illustrations (Starfish, Seashell, Anchor) */
+    .ocean-watermark {
+      position: absolute;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.22;
+      color: #ffffff;
+    }
+    .ocean-watermark.starfish { top: 145px; right: 55px; width: 135px; height: 135px; }
+    .ocean-watermark.seashell { bottom: 390px; left: 48px; width: 130px; height: 130px; }
+    .ocean-watermark.anchor { bottom: 65px; right: 120px; width: 175px; height: 175px; }
+
+    /* Header Title on Poster: 金饌廳 桌次配置圖 */
+    .poster-header {
+      position: absolute;
+      top: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+      z-index: 5;
+      width: 340px;
+      pointer-events: none;
+    }
+    .poster-header-divider {
+      color: rgba(255, 255, 255, 0.92);
+      font-size: 0.9rem;
+      letter-spacing: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin: 4px 0;
+    }
+    .poster-header-divider::before,
+    .poster-header-divider::after {
+      content: "";
+      flex: 1;
+      height: 1.5px;
+      background: rgba(255, 255, 255, 0.85);
+    }
+    .poster-title {
+      font-family: 'Noto Serif TC', serif;
+      font-size: 2.05rem;
+      font-weight: 900;
+      line-height: 1.22;
+      color: #e6b980;
+      text-shadow:
+        -1.5px -1.5px 0 #fff,
+         1.5px -1.5px 0 #fff,
+        -1.5px  1.5px 0 #fff,
+         1.5px  1.5px 0 #fff,
+         0 3px 8px rgba(110, 72, 32, 0.35);
+      letter-spacing: 4px;
+    }
+
+    /* Stage (舞台) & Table Count Label */
+    .poster-stage {
+      position: absolute;
+      top: 196px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 490px;
+      height: 60px;
+      background: #ffffff;
+      border-radius: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.55rem;
+      font-weight: 800;
+      color: var(--navy-text);
+      letter-spacing: 8px;
+      box-shadow: 0 6px 18px rgba(28, 75, 92, 0.14);
+      z-index: 4;
+    }
+
+    .poster-table-counter {
+      position: absolute;
+      top: 210px;
+      right: 34px;
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: #ffffff;
+      text-shadow: 0 2px 6px rgba(20, 65, 80, 0.35);
+      z-index: 5;
+      letter-spacing: 1px;
+    }
+
+    /* L-Shaped Aisle (走道) */
+    .poster-aisle-vertical {
+      position: absolute;
+      left: 46.5%;
+      top: 425px;
+      width: 68px;
+      height: 550px;
+      background: #ffffff;
+      border-radius: 22px 22px 0 22px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--navy-text);
+      line-height: 1.6;
+      box-shadow: 0 6px 18px rgba(28, 75, 92, 0.1);
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    .poster-aisle-horizontal {
+      position: absolute;
+      left: 46.5%;
+      top: 917px;
+      width: 455px;
+      height: 58px;
+      background: #ffffff;
+      border-radius: 0 22px 22px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding-left: 60px;
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--navy-text);
+      letter-spacing: 6px;
+      box-shadow: 0 6px 18px rgba(28, 75, 92, 0.1);
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    /* Bottom Orange Extension Zone (橘色框框座位新增區: 支援動態 5~10 桌) */
+    .orange-extension-zone {
+      position: absolute;
+      left: 48px;
+      right: 48px;
+      top: 1020px;
+      height: 390px;
+      border: 5px solid var(--orange-zone-border);
+      border-radius: 18px;
+      background: rgba(255, 248, 235, 0.18);
+      box-shadow: inset 0 0 24px rgba(245, 158, 11, 0.16), 0 4px 16px rgba(245, 158, 11, 0.15);
+      z-index: 3;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 10px 16px;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .orange-extension-zone.drag-over {
+      background: rgba(254, 243, 199, 0.38);
+      border-color: #d97706;
+    }
+
+    .orange-zone-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      z-index: 6;
+      pointer-events: auto;
+    }
+
+    .orange-zone-badge {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #ffffff;
+      font-size: 0.82rem;
+      font-weight: 800;
+      padding: 4px 12px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 8px rgba(217, 119, 6, 0.35);
+    }
+
+    .orange-zone-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 4px 8px;
+      border-radius: 999px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .orange-zone-btn {
+      border: 1px solid #fcd34d;
+      background: #fffbeb;
+      color: #b45309;
+      font-family: inherit;
+      font-size: 0.76rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .orange-zone-btn:hover {
+      background: #f59e0b;
+      color: #fff;
+      border-color: #f59e0b;
+    }
+    .orange-zone-btn.danger {
+      border-color: #fecaca;
+      background: #fef2f2;
+      color: #dc2626;
+    }
+    .orange-zone-btn.danger:hover {
+      background: #ef4444;
+      color: #fff;
+    }
+
+    .orange-zone-hint {
+      text-align: center;
+      color: rgba(255, 255, 255, 0.95);
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+      pointer-events: none;
+    }
+
+    /* Tables Layer on Poster */
+    .tables-layer {
+      position: absolute;
+      inset: 0;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    /* Individual Table Group (Center Round Table + 10 Surrounding Cinema Seat Boxes) */
+    .table-node {
+      position: absolute;
+      width: 146px;
+      height: 146px;
+      transform: translate(-50%, -50%);
+      pointer-events: auto;
+      cursor: grab;
+      transition: box-shadow 0.15s ease;
+      z-index: 12;
+    }
+    .table-node:active {
+      cursor: grabbing;
+    }
+    .table-node.dragging {
+      z-index: 50;
+      opacity: 0.92;
+      filter: drop-shadow(0 12px 20px rgba(15, 50, 62, 0.38));
+    }
+    .table-node.selected {
+      z-index: 30;
+    }
+    .table-node.dimmed {
+      opacity: 0.28;
+      filter: grayscale(0.4);
+    }
+
+    /* Center Table Circle */
+    .table-circle {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 84px;
+      height: 84px;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      background: var(--tiffany-bg);
+      border: 5px solid #ffffff;
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5), 0 5px 14px rgba(22, 68, 82, 0.22);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 4px;
+      transition: all 0.18s ease;
+    }
+
+    .table-node.main-table .table-circle {
+      background: linear-gradient(145deg, #f8d89c, #e5b567);
+      border-color: #ffffff;
+      box-shadow: 0 0 0 3px #f59e0b, 0 6px 18px rgba(180, 83, 9, 0.3);
+    }
+
+    .table-node.orange-table .table-circle {
+      border-color: #fef3c7;
+      box-shadow: 0 0 0 2.5px #f59e0b, 0 5px 14px rgba(217, 119, 6, 0.25);
+    }
+
+    .table-node.selected .table-circle {
+      border-color: #0d9488;
+      box-shadow: 0 0 0 4px #ffffff, 0 0 0 8px #0d9488, 0 8px 22px rgba(13, 148, 136, 0.45);
+      transform: translate(-50%, -50%) scale(1.05);
+    }
+
+    .table-number-label {
+      font-size: 1.15rem;
+      font-weight: 900;
+      color: var(--navy-text);
+      line-height: 1.1;
+      text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff;
+    }
+
+    .table-alias-label {
+      font-size: 0.66rem;
+      font-weight: 700;
+      color: #133c4a;
+      background: rgba(255, 255, 255, 0.82);
+      padding: 1px 5px;
+      border-radius: 6px;
+      margin-top: 2px;
+      max-width: 72px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .table-occupancy-badge {
+      font-size: 0.62rem;
+      font-weight: 800;
+      color: #0f5257;
+      margin-top: 1px;
+    }
+
+    /* Surrounding 10 Cinema-Style Seat Mini-Boxes */
+    .seat-mini-box {
+      position: absolute;
+      width: 30px;
+      height: 22px;
+      transform: translate(-50%, -50%);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.72);
+      border: 1.5px solid rgba(255, 255, 255, 0.95);
+      box-shadow: 0 2px 5px rgba(20, 60, 75, 0.16);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.62rem;
+      font-weight: 700;
+      color: #475569;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      padding: 0 2px;
+      overflow: visible;
+    }
+    .seat-mini-box:hover {
+      transform: translate(-50%, -50%) scale(1.22);
+      z-index: 25;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+    }
+
+    /* Occupied Seat */
+    .seat-mini-box.occupied {
+      background: #ffffff;
+      border-color: #0d9488;
+      color: #0f172a;
+      font-weight: 800;
+    }
+
+    /* Vegetarian Seat */
+    .seat-mini-box.diet-veg {
+      background: #ecfdf5;
+      border-color: #10b981;
+      color: #065f46;
+    }
+
+    /* Child Seat Mode (兒童座椅更換專屬顯示) */
+    .seat-mini-box.child-seat {
+      background: linear-gradient(135deg, #fef3c7, #fde68a);
+      border: 2px solid #d97706;
+      border-radius: 9px 9px 4px 4px;
+      color: #92400e;
+      box-shadow: 0 0 0 1.5px #ffffff, 0 3px 8px rgba(217, 119, 6, 0.38);
+    }
+
+    /* Seat Text Truncation */
+    .seat-mini-text {
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      line-height: 1;
+    }
+
+    /* Corner Micro Badges on Mini Seat (🥗 / 🎁 / 👶) */
+    .seat-micro-badges {
+      position: absolute;
+      top: -7px;
+      right: -6px;
+      display: flex;
+      gap: 1px;
+      pointer-events: none;
+    }
+    .micro-badge {
+      font-size: 0.56rem;
+      line-height: 1;
+      background: #ffffff;
+      border-radius: 999px;
+      padding: 1px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+
+    /* Right Side Inspector & Cinema Seat Editor Panel */
+    .inspector-panel {
+      background: rgba(255, 255, 255, 0.96);
+      border-radius: 22px;
+      border: 1px solid rgba(107, 178, 191, 0.4);
+      box-shadow: var(--shadow-soft);
+      position: sticky;
+      top: 90px;
+      max-height: calc(100vh - 108px);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    @media (max-width: 1200px) {
+      .inspector-panel {
+        position: static;
+        max-height: none;
+      }
+    }
+
+    .inspector-header {
+      padding: 14px 18px;
+      background: linear-gradient(135deg, #eff8fa 0%, #e0f2f6 100%);
+      border-bottom: 1px solid #cde7ed;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .inspector-title-wrap h2 {
+      font-size: 1.08rem;
+      font-weight: 800;
+      color: var(--navy-text);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .inspector-tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      background: #f1f5f9;
+      padding: 4px;
+      margin: 10px 16px 0;
+      border-radius: 12px;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .tab-btn {
+      border: none;
+      background: transparent;
+      padding: 7px 8px;
+      border-radius: 9px;
+      font-family: inherit;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #64748b;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .tab-btn.active {
+      background: #ffffff;
+      color: var(--navy-text);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.07);
+    }
+
+    .inspector-body {
+      padding: 14px 16px 20px;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    /* Table Meta Fields (桌號 & 座位別稱 & 區域) */
+    .meta-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+      gap: 10px;
+      background: #f8fafc;
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+    }
+    .field-group label {
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: #475569;
+    }
+    .field-input {
+      width: 100%;
+      min-width: 0;
+      padding: 7px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 9px;
+      font-family: inherit;
+      font-size: 0.86rem;
+      font-weight: 600;
+      color: #0f172a;
+      background: #fff;
+    }
+    .field-input:focus {
+      outline: none;
+      border-color: var(--primary-btn);
+      box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.14);
+    }
+
+    /* Cinema-Style Zoomed Circular Table Map inside Inspector */
+    .cinema-wheel-box {
+      position: relative;
+      width: 100%;
+      height: 315px;
+      background: radial-gradient(circle at center, #eef8fa 0%, #d8eef3 100%);
+      border: 1.5px solid #bae0e8;
+      border-radius: 18px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .cinema-center-table {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 112px;
+      height: 112px;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      background: var(--tiffany-bg);
+      border: 5px solid #ffffff;
+      box-shadow: 0 6px 18px rgba(28, 75, 92, 0.18);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 6px;
+    }
+
+    .cinema-seat-slot {
+      position: absolute;
+      width: 78px;
+      height: 46px;
+      transform: translate(-50%, -50%);
+      background: #ffffff;
+      border: 2px solid #cbd5e1;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2px 4px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      box-shadow: 0 3px 8px rgba(15, 23, 42, 0.08);
+    }
+    .cinema-seat-slot:hover {
+      border-color: #0d9488;
+      transform: translate(-50%, -50%) scale(1.06);
+      z-index: 5;
+    }
+    .cinema-seat-slot.active-seat {
+      border-color: #0d9488;
+      box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.28), 0 4px 12px rgba(13, 148, 136, 0.25);
+      z-index: 6;
+    }
+    .cinema-seat-slot.swap-source {
+      border-style: dashed;
+      border-color: #f59e0b;
+      background: #fffbeb;
+      animation: pulseSwap 1.2s infinite;
+    }
+    @keyframes pulseSwap {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+      50% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
+    }
+
+    .cinema-seat-slot.is-child {
+      background: linear-gradient(135deg, #fef3c7, #fde68a);
+      border-color: #d97706;
+      border-radius: 14px 14px 6px 6px;
+    }
+    .cinema-seat-slot.is-veg {
+      border-bottom: 4px solid #10b981;
+    }
+
+    .cinema-seat-top {
+      font-size: 0.66rem;
+      font-weight: 800;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .cinema-seat-name {
+      font-size: 0.76rem;
+      font-weight: 800;
+      color: #0f172a;
+      max-width: 68px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .cinema-seat-name.empty {
+      color: #94a3b8;
+      font-weight: 500;
+    }
+
+    /* Seat Editor Card */
+    .seat-editor-card {
+      background: #f8fafc;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 14px;
+      padding: 13px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .seat-editor-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 8px;
+    }
+    .seat-editor-title {
+      font-size: 0.9rem;
+      font-weight: 800;
+      color: var(--navy-text);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .toggle-pills {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .toggle-option {
+      flex: 1;
+      min-width: 110px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1.5px solid #cbd5e1;
+      background: #ffffff;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .toggle-option input {
+      display: none;
+    }
+    .toggle-option.active-meat {
+      background: var(--meat-bg);
+      border-color: var(--meat-pink);
+      color: #9f1239;
+    }
+    .toggle-option.active-veg {
+      background: var(--veg-bg);
+      border-color: var(--veg-green);
+      color: #065f46;
+    }
+    .toggle-option.active-child {
+      background: var(--child-bg);
+      border-color: var(--child-amber);
+      color: #92400e;
+    }
+    .toggle-option.active-gift {
+      background: var(--gift-bg);
+      border-color: var(--gift-purple);
+      color: #5b21b6;
+    }
+
+    /* All 10 Seats Quick List inside Inspector */
+    .seat-list-compact {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .seat-row-item {
+      display: grid;
+      grid-template-columns: 32px 1fr auto;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.14s;
+    }
+    .seat-row-item:hover {
+      border-color: #94a3b8;
+    }
+    .seat-row-item.active {
+      border-color: #0d9488;
+      background: #f0fdfa;
+    }
+    .seat-row-num {
+      width: 26px;
+      height: 26px;
+      border-radius: 7px;
+      background: #e2e8f0;
+      color: #334155;
+      font-size: 0.76rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .seat-row-item.is-child .seat-row-num {
+      background: #fef3c7;
+      color: #b45309;
+      border: 1.5px solid #f59e0b;
+    }
+
+    /* Batch Textarea & RSVP List */
+    .batch-textarea {
+      width: 100%;
+      min-height: 195px;
+      padding: 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 0.84rem;
+      line-height: 1.55;
+      resize: vertical;
+    }
+
+    .rsvp-card-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 360px;
+      overflow-y: auto;
+    }
+    .rsvp-guest-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 9px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .rsvp-guest-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .rsvp-guest-name {
+      font-size: 0.88rem;
+      font-weight: 800;
+      color: #0f172a;
+    }
+    .rsvp-guest-meta {
+      font-size: 0.75rem;
+      color: #64748b;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    /* Toast Notification */
+    .toast-container {
+      position: fixed;
+      bottom: 22px;
+      right: 22px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .toast-msg {
+      background: #0f172a;
+      color: #ffffff;
+      padding: 10px 16px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      animation: slideInUp 0.2s ease;
+    }
+    @keyframes slideInUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation & Live Summary Bar -->
+  <header class="top-bar">
+    <div class="top-bar-inner">
+      <div class="brand-group">
+        <div class="brand-logo" aria-hidden="true">🪑</div>
+        <div class="brand-titles">
+          <h1>金饌廳｜婚宴座位安排系統</h1>
+          <div class="brand-sub">
+            <span>獨立部署版本（支援拖曳排桌・10人電影院選位・Excel 與雲端雙向同步）</span>
+            <span id="sync-status-badge" class="sync-badge saved">✓ 已自動儲存草稿</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Statistics Strip -->
+      <div class="stats-strip" aria-label="全場即時統計">
+        <div class="stat-pill" title="目前總桌數（主廳＋橘色擴充區）">
+          <span>總桌數</span>
+          <strong id="stat-table-count">15</strong>
+          <span>桌</span>
+        </div>
+        <div class="stat-pill" title="已安排姓名之座位數 / 全場總座位數">
+          <span>已排入座</span>
+          <strong id="stat-seated-count">0 / 150</strong>
+          <span>位</span>
+        </div>
+        <div class="stat-pill" title="葷食座位數">
+          <span>🥩 葷食</span>
+          <strong id="stat-meat-count">0</strong>
+        </div>
+        <div class="stat-pill veg" title="素食座位數">
+          <span>🥗 素食</span>
+          <strong id="stat-veg-count">0</strong>
+        </div>
+        <div class="stat-pill child" title="兒童座椅總數">
+          <span>👶 兒童椅</span>
+          <strong id="stat-child-count">0</strong>
+        </div>
+        <div class="stat-pill gift" title="已標記婚禮小物或小驚喜之座位數">
+          <span>🎁 婚禮小物/驚喜</span>
+          <strong id="stat-gift-count">0</strong>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="toolbar-actions">
+        <button type="button" id="btn-add-main-table" class="btn">＋ 新增主廳桌</button>
+        <button type="button" id="btn-add-orange-table" class="btn btn-orange">＋ 橘色區新增桌</button>
+        <button type="button" id="btn-export-excel" class="btn">📥 匯出 Excel (.xlsx)</button>
+        <button type="button" id="btn-import-excel-trigger" class="btn">📤 匯入 Excel/JSON</button>
+        <input type="file" id="input-import-file" accept=".xlsx,.xls,.json" class="hidden" aria-label="匯入座位設定檔">
+        <button type="button" id="btn-load-cloud" class="btn" title="從 Google 試算表讀取最新桌次分配">🔄 雲端讀取</button>
+        <button type="button" id="btn-save-cloud" class="btn btn-primary" title="將目前所有桌次與 10 人座位明細同步至 Google 試算表">💾 儲存至雲端試算表</button>
+      </div>
+    </div>
+
+    <!-- Sub-toolbar: Search, Highlight Filters, Zoom, Grid Snap -->
+    <div class="sub-toolbar">
+      <div class="search-and-filters">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="input-search-guest" placeholder="搜尋賓客姓名、桌號、別稱或小物..." aria-label="搜尋賓客或桌次">
+          <button type="button" id="btn-clear-search" class="search-clear" title="清除搜尋">✕</button>
+        </div>
+
+        <div class="chip-group" role="group" aria-label="高亮篩選模式">
+          <button type="button" class="chip-btn active" data-highlight="all">全部顯示</button>
+          <button type="button" class="chip-btn" data-highlight="veg">🥗 素食高亮</button>
+          <button type="button" class="chip-btn" data-highlight="child">👶 兒童椅高亮</button>
+          <button type="button" class="chip-btn" data-highlight="gift">🎁 婚禮小物高亮</button>
+          <button type="button" class="chip-btn" data-highlight="empty">⚪ 空位高亮</button>
+        </div>
+      </div>
+
+      <div class="search-and-filters">
+        <label style="font-size: 0.8rem; font-weight: 600; color: #475569; display: inline-flex; align-items: center; gap: 5px; cursor: pointer;">
+          <input type="checkbox" id="chk-grid-snap" checked>
+          <span>智慧網格吸附</span>
+        </label>
+        <div class="chip-group" role="group" aria-label="畫布縮放">
+          <button type="button" id="btn-zoom-out" class="chip-btn" title="縮小平面圖">－</button>
+          <span id="label-zoom-level" style="padding: 4px 8px; font-size: 0.78rem; font-weight: 700; color: #334155;">100%</span>
+          <button type="button" id="btn-zoom-in" class="chip-btn" title="放大平面圖">＋</button>
+          <button type="button" id="btn-zoom-fit" class="chip-btn">適應寬度</button>
+        </div>
+        <button type="button" id="btn-reset-default-layout" class="btn btn-sm btn-danger" title="重置回金饌廳預設桌次配置">↺ 重置預設配置</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Workspace: Left Poster Map + Right Cinema Seat Inspector -->
+  <main class="workspace">
+    <!-- Left:的金饌廳桌次配置圖 -->
+    <div class="hall-scroll-wrapper" id="hall-scroll-wrapper">
+      <div class="banquet-poster" id="banquet-poster" aria-label="金饌廳桌次配置平面圖">
+        <div class="poster-inner-frame"></div>
+
+        <!-- Four Vintage Corner Filigree SVGs -->
+        <svg class="corner-ornament tl" viewBox="0 0 100 100" fill="none" stroke="white" stroke-width="3">
+          <path d="M4 95 V30 C4 14 14 4 30 4 H95" stroke-width="3.5"/>
+          <path d="M12 75 V34 C12 20 20 12 34 12 H75" stroke-width="2"/>
+          <circle cx="26" cy="26" r="8" fill="white" fill-opacity="0.3"/>
+          <path d="M12 48 C28 48 34 32 22 22 C14 15 36 12 48 28" stroke-linecap="round"/>
+        </svg>
+        <svg class="corner-ornament tr" viewBox="0 0 100 100" fill="none" stroke="white" stroke-width="3">
+          <path d="M4 95 V30 C4 14 14 4 30 4 H95" stroke-width="3.5"/>
+          <path d="M12 75 V34 C12 20 20 12 34 12 H75" stroke-width="2"/>
+          <circle cx="26" cy="26" r="8" fill="white" fill-opacity="0.3"/>
+          <path d="M12 48 C28 48 34 32 22 22 C14 15 36 12 48 28" stroke-linecap="round"/>
+        </svg>
+        <svg class="corner-ornament bl" viewBox="0 0 100 100" fill="none" stroke="white" stroke-width="3">
+          <path d="M4 95 V30 C4 14 14 4 30 4 H95" stroke-width="3.5"/>
+          <path d="M12 75 V34 C12 20 20 12 34 12 H75" stroke-width="2"/>
+          <circle cx="26" cy="26" r="8" fill="white" fill-opacity="0.3"/>
+          <path d="M12 48 C28 48 34 32 22 22 C14 15 36 12 48 28" stroke-linecap="round"/>
+        </svg>
+        <svg class="corner-ornament br" viewBox="0 0 100 100" fill="none" stroke="white" stroke-width="3">
+          <path d="M4 95 V30 C4 14 14 4 30 4 H95" stroke-width="3.5"/>
+          <path d="M12 75 V34 C12 20 20 12 34 12 H75" stroke-width="2"/>
+          <circle cx="26" cy="26" r="8" fill="white" fill-opacity="0.3"/>
+          <path d="M12 48 C28 48 34 32 22 22 C14 15 36 12 48 28" stroke-linecap="round"/>
+        </svg>
+
+        <!-- Ocean Theme Watermarks -->
+        <svg class="ocean-watermark starfish" viewBox="0 0 100 100" fill="currentColor">
+          <path d="M50 5 L61 36 L94 38 L68 58 L77 90 L50 72 L23 90 L32 58 L6 38 L39 36 Z"/>
+        </svg>
+        <svg class="ocean-watermark seashell" viewBox="0 0 100 100" fill="currentColor">
+          <path d="M50 88 C30 88 12 68 15 44 C18 22 34 12 50 12 C66 12 82 22 85 44 C88 68 70 88 50 88 Z"/>
+        </svg>
+        <svg class="ocean-watermark anchor" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="6">
+          <circle cx="50" cy="20" r="9"/>
+          <line x1="50" y1="29" x2="50" y2="85"/>
+          <line x1="30" y1="42" x2="70" y2="42"/>
+          <path d="M20 65 C20 85 80 85 80 65"/>
+        </svg>
+
+        <!-- Poster Title -->
+        <div class="poster-header">
+          <div class="poster-header-divider">❖ ─── ❖</div>
+          <div class="poster-title">金饌廳<br>桌次配置圖</div>
+          <div class="poster-header-divider">❖ ─── ❖</div>
+        </div>
+
+        <!-- Stage & Dynamic Table Count -->
+        <div class="poster-stage">舞台</div>
+        <div class="poster-table-counter" id="poster-table-counter">桌數：15桌</div>
+
+        <!-- L-Shaped Aisle -->
+        <div class="poster-aisle-vertical">
+          <span>走</span>
+          <span>道</span>
+        </div>
+        <div class="poster-aisle-horizontal">走道</div>
+
+        <!-- Orange Extension Box (下方橘色框框也為座位新增區：可動態新增 5~10 桌) -->
+        <div class="orange-extension-zone" id="orange-extension-zone">
+          <div class="orange-zone-header">
+            <span class="orange-zone-badge">
+              🍊 座位新增擴充區（目前 <span id="orange-zone-count">0</span> 桌）
+            </span>
+            <div class="orange-zone-controls">
+              <button type="button" class="orange-zone-btn" id="btn-orange-add-1" title="在橘色框框新增 1 桌">＋1 桌</button>
+              <button type="button" class="orange-zone-btn" id="btn-orange-preset-5" title="將橘色框框設定為 5 桌">設為 5 桌</button>
+              <button type="button" class="orange-zone-btn" id="btn-orange-preset-10" title="將橘色框框設定為 10 桌">設為 10 桌</button>
+              <button type="button" class="orange-zone-btn danger" id="btn-orange-clear" title="清空橘色擴充區所有桌子">清空擴充區</button>
+            </div>
+          </div>
+          <div class="orange-zone-hint" id="orange-zone-hint">
+            可點擊上方按鈕快速新增 5~10 桌，或直接將任一圓桌拖曳至此橘色框框區域內自由排列
+          </div>
+        </div>
+
+        <!-- Interactive Draggable Tables Layer -->
+        <div class="tables-layer" id="tables-layer"></div>
+      </div>
+    </div>
+
+    <!-- Right: Selected Table & 10-Seat Cinema Editor Panel -->
+    <aside class="inspector-panel" id="inspector-panel" aria-label="桌次與座位詳細編排面板">
+      <div class="inspector-header">
+        <div class="inspector-title-wrap">
+          <h2 id="inspector-heading">🪑 主桌（主桌）</h2>
+          <p id="inspector-subheading" style="font-size: 0.76rem; color: #475569;">點擊圓桌周圍小格可編輯座位或互換位置</p>
+        </div>
+        <div style="display: flex; gap: 6px;">
+          <button type="button" id="btn-delete-selected-table" class="btn btn-sm btn-danger" title="刪除此桌">🗑️ 刪桌</button>
+        </div>
+      </div>
+
+      <!-- Inspector Mode Tabs -->
+      <div class="inspector-tabs" role="tablist">
+        <button type="button" class="tab-btn active" data-tab="seat-map" role="tab" aria-selected="true">🎯 座位選位編排</button>
+        <button type="button" class="tab-btn" data-tab="batch-list" role="tab" aria-selected="false">📋 整桌名單更新</button>
+        <button type="button" class="tab-btn" data-tab="rsvp-import" role="tab" aria-selected="false">💌 報名清單帶入</button>
+      </div>
+
+      <!-- Tab 1: Cinema-Style 10-Seat Editor & Table Meta -->
+      <div class="inspector-body" id="tab-panel-seat-map">
+        <!-- Table Number & Alias Inputs -->
+        <div class="meta-grid">
+          <div class="field-group">
+            <label for="input-table-number">座位桌號</label>
+            <input type="text" id="input-table-number" class="field-input" placeholder="如：主桌、02、16">
+          </div>
+          <div class="field-group">
+            <label for="input-table-alias">座位別稱（桌名）</label>
+            <input type="text" id="input-table-alias" class="field-input" placeholder="如：男方主桌、大學同學">
+          </div>
+        </div>
+
+        <!-- Zoomed Cinema Circular Seat Map -->
+        <div class="cinema-wheel-box" id="cinema-wheel-box">
+          <div class="cinema-center-table" id="cinema-center-table">
+            <div style="font-size: 1.05rem; font-weight: 900; color: #1c4b5c;" id="wheel-table-num">主桌</div>
+            <div style="font-size: 0.72rem; font-weight: 700; color: #334155;" id="wheel-table-alias">新人與雙方主婚人</div>
+            <div style="font-size: 0.68rem; font-weight: 800; color: #0d9488; margin-top: 3px;" id="wheel-table-stats">0 / 10 位</div>
+          </div>
+          <div id="cinema-wheel-seats"></div>
+        </div>
+
+        <!-- Selected Seat Detailed Editor -->
+        <div class="seat-editor-card" id="seat-editor-card">
+          <div class="seat-editor-header">
+            <div class="seat-editor-title">
+              <span id="editor-seat-badge">座位 #1</span>
+              <span id="editor-seat-status" style="font-size: 0.75rem; color: #64748b; font-weight: 600;">（空位）</span>
+            </div>
+            <div style="display: flex; gap: 6px;">
+              <button type="button" id="btn-swap-seat-mode" class="btn btn-sm" title="點擊後再點另一個座位即可對調位置">⇄ 與他座換位</button>
+              <button type="button" id="btn-clear-single-seat" class="btn btn-sm btn-danger" title="清空此座位">清空此座</button>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label for="input-seat-guest-name">座位人名</label>
+            <input type="text" id="input-seat-guest-name" class="field-input" placeholder="輸入賓客姓名（例如：王小明）">
+          </div>
+
+          <div class="field-group">
+            <label>葷素選擇與兒童座椅（勾選兒童椅將更換平面圖顯示）</label>
+            <div class="toggle-pills">
+              <button type="button" id="btn-seat-diet-meat" class="toggle-option active-meat">🥩 葷食</button>
+              <button type="button" id="btn-seat-diet-veg" class="toggle-option">🥗 素食</button>
+              <button type="button" id="btn-seat-child-toggle" class="toggle-option">👶 兒童座椅</button>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label>婚禮小物或小驚喜（每個座位皆可獨立標記）</label>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <button type="button" id="btn-seat-gift-toggle" class="toggle-option" style="flex: 0 0 auto;">🎁 放置小物/驚喜</button>
+              <input type="text" id="input-seat-gift-note" class="field-input" style="flex: 1;" placeholder="小物或驚喜內容（如：捧花禮、手寫卡）">
+            </div>
+          </div>
+        </div>
+
+        <!-- 10 Seats Overview List -->
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span style="font-size: 0.8rem; font-weight: 800; color: #334155;">本桌 10 個座位清單（可點擊快速切換）</span>
+          </div>
+          <div class="seat-list-compact" id="seat-list-compact"></div>
+        </div>
+      </div>
+
+      <!-- Tab 2: Whole-Table Batch List Update (選整桌更新人數清單) -->
+      <div class="inspector-body hidden" id="tab-panel-batch-list">
+        <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 10px 12px; font-size: 0.78rem; color: #1e3a8a; line-height: 1.5;">
+          <strong>💡 整桌 10 人清單快速編輯說明：</strong><br>
+          每行對應本桌的第 1 ~ 10 號座位。您可以只填姓名，或用逗號加上標記：<br>
+          <code>王大明</code>（預設葷食）<br>
+          <code>林小美, 素</code>（自動設為🥗素食）<br>
+          <code>王小寶, 兒童椅, 畫本驚喜</code>（自動設為👶兒童椅＋🎁婚禮小物）
+        </div>
+
+        <div class="field-group">
+          <label for="textarea-batch-seats">本桌 1~10 號座位名單（每行 1 位，空白行代表空位）</label>
+          <textarea id="textarea-batch-seats" class="batch-textarea" placeholder="第1位姓名&#10;第2位姓名, 素&#10;第3位姓名, 兒童椅&#10;第4位姓名, 小物:手寫卡片"></textarea>
+        </div>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+          <button type="button" id="btn-apply-batch-text" class="btn btn-primary" style="flex: 1;">✓ 套用名單至本桌 (1~10座)</button>
+        </div>
+
+        <div style="border-top: 1px solid #e2e8f0; padding-top: 12px; display: flex; flex-direction: column; gap: 8px;">
+          <span style="font-size: 0.8rem; font-weight: 800; color: #334155;">整桌快速批次設定</span>
+          <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+            <button type="button" id="btn-table-all-meat" class="btn btn-sm">🥩 本桌在座全設葷食</button>
+            <button type="button" id="btn-table-all-veg" class="btn btn-sm">🥗 本桌在座全設素食</button>
+            <button type="button" id="btn-table-add-child" class="btn btn-sm">👶 新增 1 張兒童椅於末座</button>
+            <button type="button" id="btn-table-all-gift" class="btn btn-sm">🎁 本桌在座全加小物</button>
+            <button type="button" id="btn-table-clear-all" class="btn btn-sm btn-danger">🗑️ 清空本桌所有座位</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 3: Import from Cloud RSVP (從報名清單帶入) -->
+      <div class="inspector-body hidden" id="tab-panel-rsvp-import">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+          <span style="font-size: 0.8rem; font-weight: 700; color: #475569;">從 Google 試算表「報名清單」自動展開帶入本桌</span>
+          <button type="button" id="btn-fetch-rsvp" class="btn btn-sm">🔄 重新同步報名清單</button>
+        </div>
+        <div class="rsvp-card-list" id="rsvp-card-list"></div>
+      </div>
+    </aside>
+  </main>
+
+  <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+  <!-- Independent Script for Wedding Seating Arrangement ONLY -->
+  <script>
+/**
+ * ============================================================================
+ * 金饌廳｜婚宴座位安排系統 獨立前端腳本 (seating.js)
+ * 注意：本檔案完全獨立運作，不與專案其他頁面共用任何 JS
+ * ============================================================================
+ */
+(function () {
+  'use strict';
+
+  // ==================== Configuration ====================
+  const API_URL = 'https://script.google.com/macros/s/AKfycbzEs0KfkyaB_6Z7gmYY-a2a_5XLMvrMioxQ0I2tCM9zwnt0NHl2Z9Z8gRgbZdD1i77L3g/exec';
+  const STORAGE_KEY = 'wedding_jinzhuan_seating_v1';
+  const SEATS_PER_TABLE = 10;
+
+  // 橘色擴充區在海報 (920 x 1520) 上的垂直百分比門檻
+  // 海報總高 1520px，橘色框框 top: 1020px (~67.1%) ~ 1410px (~92.7%)
+  const ORANGE_ZONE_Y_MIN = 67.0;
+
+  // ==================== Default Jinzhuan Hall 15-Table Proportion Layout ====================
+  // 嚴格參照使用者提供之「金饌廳 桌次配置圖」截圖比例設定預設位置：
+  // 舞台位於上方中央，主桌位於舞台正下方，中央為 L 型走道，
+  // 左側三排為 (10, 09)、(13, 12, 11)、(15, 14)，右側三排為 (02, 03)、(04, 05, 06)、(07, 08)
+  function createEmptySeats(count = SEATS_PER_TABLE) {
+    const seats = [];
+    for (let i = 1; i <= count; i++) {
+      seats.push({
+        seatIndex: i,
+        name: '',
+        diet: 'meat',        // 'meat' (葷食) | 'veg' (素食)
+        isChildSeat: false,  // 是否為兒童座椅（勾選後更換顯示）
+        hasGift: false,      // 是否放置婚禮小物或小驚喜
+        giftNote: ''         // 婚禮小物/驚喜備註
+      });
+    }
+    return seats;
+  }
+
+  function getDefaultTables() {
+    const presets = [
+      // 主桌 (中央舞台下方，走道頂端上方)
+      { id: 'T_MAIN', tableNumber: '主桌', alias: '雙方主婚人席', zone: 'main', x: 50.0, y: 22.8 },
+
+      // 右上排：02, 03
+      { id: 'T_02', tableNumber: '02', alias: '男方親戚席', zone: 'main', x: 75.5, y: 33.8 },
+      { id: 'T_03', tableNumber: '03', alias: '女方親戚席', zone: 'main', x: 90.2, y: 33.8 },
+
+      // 右中排：04, 05, 06
+      { id: 'T_04', tableNumber: '04', alias: '男方貴賓席', zone: 'main', x: 60.8, y: 44.5 },
+      { id: 'T_05', tableNumber: '05', alias: '男方摯友席', zone: 'main', x: 75.5, y: 44.5 },
+      { id: 'T_06', tableNumber: '06', alias: '女方摯友席', zone: 'main', x: 90.2, y: 44.5 },
+
+      // 右下排（水平走道上方）：07, 08
+      { id: 'T_07', tableNumber: '07', alias: '大學同學席', zone: 'main', x: 60.8, y: 55.2 },
+      { id: 'T_08', tableNumber: '08', alias: '同事好友席', zone: 'main', x: 75.5, y: 55.2 },
+
+      // 左上排：10, 09
+      { id: 'T_10', tableNumber: '10', alias: '女方長輩席', zone: 'main', x: 10.2, y: 33.8 },
+      { id: 'T_09', tableNumber: '09', alias: '男方長輩席', zone: 'main', x: 24.8, y: 33.8 },
+
+      // 左中排：13, 12, 11
+      { id: 'T_13', tableNumber: '13', alias: '女方親友席', zone: 'main', x: 10.2, y: 44.5 },
+      { id: 'T_12', tableNumber: '12', alias: '男方親友席', zone: 'main', x: 24.8, y: 44.5 },
+      { id: 'T_11', tableNumber: '11', alias: '摯愛閨蜜席', zone: 'main', x: 39.2, y: 44.5 },
+
+      // 左下排：15, 14
+      { id: 'T_15', tableNumber: '15', alias: '高中死黨席', zone: 'main', x: 24.8, y: 55.2 },
+      { id: 'T_14', tableNumber: '14', alias: '社團好友席', zone: 'main', x: 39.2, y: 55.2 }
+    ];
+
+    return presets.map(t => ({
+      ...t,
+      seats: createEmptySeats(SEATS_PER_TABLE)
+    }));
+  }
+
+  // ==================== Application State ====================
+  let state = {
+    tables: [],
+    selectedTableId: 'T_MAIN',
+    selectedSeatIndex: 1,       // 1 ~ 10
+    swapSourceSeatIndex: null,  // 若不為 null 代表正在進行座位對調
+    highlightMode: 'all',       // 'all' | 'veg' | 'child' | 'gift' | 'empty'
+    searchQuery: '',
+    gridSnap: true,
+    zoomLevel: 1.0,
+    isDirty: false,
+    lastSavedAt: null,
+    rsvpList: []                // 從雲端或範例載入之報名清單
+  };
+
+  // 預設範例報名清單（當離線或雲端無資料時提供快速展示與帶入測試）
+  const FALLBACK_RSVP_LIST = [
+    { '姓名': '陳建宏', '陣營': '男方親友', '參與人數': 4, '葷素選擇': '葷食3, 素食1', '兒童座椅': 1, '備註/祝福': '攜帶一位寶寶需兒童椅' },
+    { '姓名': '林雅婷', '陣營': '女方親友', '參與人數': 2, '葷素選擇': '素食', '兒童座椅': 0, '備註/祝福': '全素，恭喜仁雲&銳芝！' },
+    { '姓名': '張家豪', '陣營': '男方親友', '參與人數': 3, '葷素選擇': '葷食', '兒童座椅': 1, '備註/祝福': '百年好合' },
+    { '姓名': '黃詩涵', '陣營': '女方親友', '參與人數': 1, '葷素選擇': '葷食', '兒童座椅': 0, '備註/祝福': '抽捧花候選人' },
+    { '姓名': '李冠宇', '陣營': '男方親友', '參與人數': 5, '葷素選擇': '葷食4, 素食1', '兒童座椅': 2, '備註/祝福': '全家出席' }
+  ];
+
+  // ==================== Initialization ====================
+  function init() {
+    loadFromLocalStorage();
+    if (!Array.isArray(state.tables) || state.tables.length === 0) {
+      state.tables = getDefaultTables();
+      state.selectedTableId = state.tables[0].id;
+      saveToLocalStorage(false);
+    }
+
+    state.rsvpList = [...FALLBACK_RSVP_LIST];
+    bindEvents();
+    renderAll();
+    renderRsvpImportList();
+    // 啟動時自動在背景同步雲端真實「報名清單 (RSVP)」，若雲端有桌次分配且本機尚無自訂修改亦可隨時讀取
+    fetchCloudRsvpList(true);
+  }
+
+  // ==================== Persistence (LocalStorage & Cloud GAS) ====================
+  function saveToLocalStorage(markDirty = true) {
+    if (markDirty) {
+      state.isDirty = true;
+    }
+    try {
+      const payload = {
+        tables: state.tables,
+        selectedTableId: state.selectedTableId,
+        lastSavedAt: new Date().toISOString()
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      updateSyncBadge();
+    } catch (err) {
+      console.warn('Failed to save to localStorage:', err);
+    }
+  }
+
+  function loadFromLocalStorage() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (parsed && Array.isArray(parsed.tables) && parsed.tables.length > 0) {
+        state.tables = normalizeTables(parsed.tables);
+        state.selectedTableId = parsed.selectedTableId || state.tables[0].id;
+        state.lastSavedAt = parsed.lastSavedAt || null;
+      }
+    } catch (err) {
+      console.warn('Failed to load from localStorage:', err);
+    }
+  }
+
+  function normalizeTables(tables) {
+    return tables.map((t, idx) => {
+      const seats = createEmptySeats(SEATS_PER_TABLE);
+      if (Array.isArray(t.seats)) {
+        t.seats.forEach((s, sIdx) => {
+          const targetIdx = (Number(s.seatIndex) >= 1 && Number(s.seatIndex) <= SEATS_PER_TABLE)
+            ? Number(s.seatIndex) - 1
+            : sIdx;
+          if (targetIdx >= 0 && targetIdx < SEATS_PER_TABLE) {
+            seats[targetIdx] = {
+              seatIndex: targetIdx + 1,
+              name: String(s.name || '').trim(),
+              diet: (s.diet === 'veg' || s.diet === '素食' || s.diet === '素') ? 'veg' : 'meat',
+              isChildSeat: Boolean(s.isChildSeat === true || s.isChildSeat === '是' || s.isChildSeat === 'true'),
+              hasGift: Boolean(s.hasGift === true || s.hasGift === '是' || s.hasGift === 'true' || (s.giftNote && String(s.giftNote).trim())),
+              giftNote: String(s.giftNote || '').trim()
+            };
+          }
+        });
+      }
+      const x = Number.isFinite(Number(t.x)) ? Number(t.x) : 50;
+      const y = Number.isFinite(Number(t.y)) ? Number(t.y) : 50;
+      const zone = t.zone || (y >= ORANGE_ZONE_Y_MIN ? 'orange' : 'main');
+      return {
+        id: String(t.id || `T_${idx + 1}`),
+        tableNumber: String(t.tableNumber !== undefined ? t.tableNumber : `${idx + 1}`),
+        alias: String(t.alias || ''),
+        zone,
+        x: Math.max(6, Math.min(94, x)),
+        y: Math.max(16, Math.min(94, y)),
+        seats
+      };
+    });
+  }
+
+  function updateSyncBadge(statusText, mode) {
+    const badge = document.getElementById('sync-status-badge');
+    if (!badge) return;
+    badge.className = 'sync-badge';
+    if (mode === 'saving') {
+      badge.classList.add('saving');
+      badge.textContent = statusText || '⏳ 雲端同步儲存中...';
+    } else if (state.isDirty) {
+      badge.classList.add('dirty');
+      badge.textContent = statusText || '● 草稿已存於本機（尚未同步雲端）';
+    } else {
+      badge.classList.add('saved');
+      badge.textContent = statusText || '✓ 已儲存（本機＋雲端同步就緒）';
+    }
+  }
+
+  // ==================== Cloud Sync (Google Apps Script) ====================
+  async function saveToCloud() {
+    const saveBtn = document.getElementById('btn-save-cloud');
+    if (saveBtn) saveBtn.disabled = true;
+    updateSyncBadge('⏳ 正在儲存至 Google 試算表...', 'saving');
+
+    const payload = {
+      formType: 'seating',
+      action: 'saveAll',
+      tables: state.tables
+    };
+
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      });
+      const result = await response.json();
+      if (result && (result.result === 'success' || result.status === 'success')) {
+        state.isDirty = false;
+        saveToLocalStorage(false);
+        updateSyncBadge('✓ 已同步至雲端試算表', 'saved');
+        showToast('✅ 已成功將所有桌次與 10 人座位同步儲存至 Google 試算表！');
+      } else {
+        throw new Error((result && result.error) || 'Unknown response');
+      }
+    } catch (err) {
+      console.warn('Cloud save fallback notice:', err);
+      saveToLocalStorage(false);
+      updateSyncBadge('✓ 已保存於本機草稿（可隨時匯出 Excel）', 'saved');
+      showToast('💾 已完整保存至本機（若需同步雲端請確認 GAS 已更新部署）');
+    } finally {
+      if (saveBtn) saveBtn.disabled = false;
+    }
+  }
+
+  async function loadFromCloud() {
+    updateSyncBadge('⏳ 正在從雲端試算表讀取...', 'saving');
+    try {
+      const response = await fetch(API_URL + '?action=seating');
+      const result = await response.json();
+      if (result && result.status === 'success' && result.data && Array.isArray(result.data.seating)) {
+        const rows = result.data.seating;
+        if (rows.length === 0) {
+          showToast('ℹ️ 雲端試算表「桌次分配」目前尚無資料，維持現有桌位。');
+          updateSyncBadge();
+          return;
+        }
+        const reconstructed = reconstructTablesFromSheetRows(rows);
+        if (reconstructed.length > 0) {
+          state.tables = reconstructed;
+          state.selectedTableId = state.tables[0].id;
+          state.selectedSeatIndex = 1;
+          state.isDirty = false;
+          saveToLocalStorage(false);
+          renderAll();
+          showToast(`✅ 已從雲端成功載入 ${reconstructed.length} 桌座位配置！`);
+        }
+      } else {
+        throw new Error('Invalid cloud response');
+      }
+    } catch (err) {
+      console.warn('Load cloud error:', err);
+      showToast('⚠️ 無法連線至雲端試算表，目前顯示本機最新儲存的桌次配置。');
+      updateSyncBadge();
+    }
+  }
+
+  // 將 Google Sheet「桌次分配」平面資料列還原為 GUI 桌次與 10 座位結構
+  function reconstructTablesFromSheetRows(rows) {
+    // 若試算表具備升級版欄位（含桌次ID 或 座位編號 或 X座標）
+    const hasStructuredCols = rows.some(r =>
+      r['桌次ID'] !== undefined || r['座位編號'] !== undefined || r['X座標'] !== undefined
+    );
+
+    if (hasStructuredCols) {
+      const tableMap = new Map();
+      rows.forEach((row, idx) => {
+        const tblNumber = String(row['桌號'] !== undefined ? row['桌號'] : '').trim();
+        const tblId = String(row['桌次ID'] || (tblNumber ? `T_${tblNumber}` : `T_ROW_${idx}`)).trim();
+        if (!tableMap.has(tblId)) {
+          const xVal = parseFloat(row['X座標']);
+          const yVal = parseFloat(row['Y座標']);
+          const zoneVal = String(row['區域'] || '').trim();
+          tableMap.set(tblId, {
+            id: tblId,
+            tableNumber: tblNumber || String(tableMap.size + 1),
+            alias: String(row['座位別稱'] || '').trim(),
+            zone: (zoneVal === 'orange' || zoneVal === '橘色擴充區' || yVal >= ORANGE_ZONE_Y_MIN) ? 'orange' : 'main',
+            x: Number.isFinite(xVal) ? xVal : 50,
+            y: Number.isFinite(yVal) ? yVal : 50,
+            seats: createEmptySeats(SEATS_PER_TABLE)
+          });
+        }
+        const tbl = tableMap.get(tblId);
+        const seatNo = parseInt(row['座位編號'], 10);
+        const targetIdx = (seatNo >= 1 && seatNo <= SEATS_PER_TABLE)
+          ? seatNo - 1
+          : tbl.seats.findIndex(s => !s.name);
+        if (targetIdx >= 0 && targetIdx < SEATS_PER_TABLE) {
+          const dietRaw = String(row['飲食'] || '').trim();
+          const childRaw = String(row['兒童座椅'] || '').trim();
+          const giftRaw = String(row['婚禮小物'] || '').trim();
+          const giftNote = String(row['小物備註'] || '').trim();
+          tbl.seats[targetIdx] = {
+            seatIndex: targetIdx + 1,
+            name: String(row['姓名'] || row['賓客姓名'] || '').trim(),
+            diet: (dietRaw.includes('素') || dietRaw === 'veg') ? 'veg' : 'meat',
+            isChildSeat: (childRaw === '是' || childRaw === 'true' || childRaw === '1' || childRaw === '👶'),
+            hasGift: (giftRaw === '是' || giftRaw === 'true' || giftRaw === '1' || Boolean(giftNote)),
+            giftNote
+          };
+        }
+      });
+      return Array.from(tableMap.values());
+    }
+
+    // 向下相容：若試算表僅有舊版 ["姓名", "桌號"] 兩欄，智慧對應至預設金饌廳桌次
+    const baseTables = getDefaultTables();
+    rows.forEach(row => {
+      const guestName = String(row['姓名'] || '').trim();
+      const tblNum = String(row['桌號'] || '').trim();
+      if (!guestName && !tblNum) return;
+      let targetTable = baseTables.find(t => t.tableNumber === tblNum || t.tableNumber === tblNum.padStart(2, '0'));
+      if (!targetTable) {
+        targetTable = createNewTableObject('orange', tblNum || String(baseTables.length + 1), '雲端匯入桌', baseTables);
+        baseTables.push(targetTable);
+      }
+      const emptySeat = targetTable.seats.find(s => !s.name);
+      if (emptySeat) {
+        emptySeat.name = guestName;
+      }
+    });
+    return baseTables;
+  }
+
+  // ==================== Table & Seat CRUD Helpers ====================
+  function getSelectedTable() {
+    return state.tables.find(t => t.id === state.selectedTableId) || state.tables[0] || null;
+  }
+
+  function getNextTableNumber() {
+    let maxNum = 15;
+    state.tables.forEach(t => {
+      const n = parseInt(t.tableNumber, 10);
+      if (Number.isFinite(n) && n > maxNum) maxNum = n;
+    });
+    return String(maxNum + 1).padStart(2, '0');
+  }
+
+  function createNewTableObject(zone = 'orange', customNumber = null, customAlias = '', existingList = state.tables) {
+    const tblNum = customNumber || getNextTableNumber();
+    const id = 'T_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+
+    let x = 50;
+    let y = 33.8;
+
+    if (zone === 'orange') {
+      const orangeTables = existingList.filter(t => t.zone === 'orange');
+      const idx = orangeTables.length;
+      const col = idx % 5;
+      const row = Math.floor(idx / 5);
+      x = 16 + col * 17;
+      y = 74.5 + row * 11.2;
+    } else {
+      // 主廳預設找右上方或左上方空位（例如 01 桌位置 x: 60.8, y: 33.8）
+      const hasRightInner = existingList.some(t => Math.abs(t.x - 60.8) < 5 && Math.abs(t.y - 33.8) < 5);
+      const hasLeftInner = existingList.some(t => Math.abs(t.x - 39.2) < 5 && Math.abs(t.y - 33.8) < 5);
+      if (!hasRightInner) {
+        x = 60.8;
+        y = 33.8;
+      } else if (!hasLeftInner) {
+        x = 39.2;
+        y = 33.8;
+      } else {
+        x = 10.2;
+        y = 55.2;
+      }
+    }
+
+    return {
+      id,
+      tableNumber: tblNum,
+      alias: customAlias || (zone === 'orange' ? '擴充預備席' : '貴賓親友席'),
+      zone,
+      x,
+      y,
+      seats: createEmptySeats(SEATS_PER_TABLE)
+    };
+  }
+
+  function addTable(zone = 'orange', customAlias = '') {
+    const newTbl = createNewTableObject(zone, null, customAlias, state.tables);
+    state.tables.push(newTbl);
+    state.selectedTableId = newTbl.id;
+    state.selectedSeatIndex = 1;
+    saveToLocalStorage(true);
+    renderAll();
+    showToast(`🪑 已於${zone === 'orange' ? '橘色擴充區' : '主廳'}新增「${newTbl.tableNumber} 桌」！`);
+  }
+
+  // 在橘色框框動態設定為指定桌數（如 5 桌 或 10 桌）
+  function setOrangeZoneTableCount(targetCount) {
+    const currentOrange = state.tables.filter(t => t.zone === 'orange');
+    if (currentOrange.length < targetCount) {
+      const toAdd = targetCount - currentOrange.length;
+      for (let i = 0; i < toAdd; i++) {
+        const tbl = createNewTableObject('orange', null, `擴充席 ${currentOrange.length + i + 1}`, state.tables);
+        state.tables.push(tbl);
+      }
+    } else if (currentOrange.length > targetCount) {
+      // 由後往前移除多餘的擴充桌
+      const idsToRemove = currentOrange.slice(targetCount).map(t => t.id);
+      state.tables = state.tables.filter(t => !idsToRemove.includes(t.id));
+    }
+
+    // 重新整齊排列橘色區的所有桌子（最多 5 欄 x 2 排 = 10 桌完美對齊於橘色框內）
+    const updatedOrange = state.tables.filter(t => t.zone === 'orange');
+    updatedOrange.forEach((t, idx) => {
+      const cols = updatedOrange.length <= 5 ? Math.max(updatedOrange.length, 5) : 5;
+      const col = idx % cols;
+      const row = Math.floor(idx / cols);
+      t.x = 16 + col * 17;
+      t.y = updatedOrange.length <= 5 ? 80.5 : (75.0 + row * 11.2);
+    });
+
+    if (!state.tables.some(t => t.id === state.selectedTableId) && state.tables.length > 0) {
+      state.selectedTableId = state.tables[state.tables.length - 1].id;
+    } else if (updatedOrange.length > 0) {
+      state.selectedTableId = updatedOrange[updatedOrange.length - 1].id;
+    }
+
+    saveToLocalStorage(true);
+    renderAll();
+    showToast(`🍊 橘色擴充區已動態調整為 ${targetCount} 桌（每桌 10 位）！`);
+  }
+
+  function clearOrangeZoneTables() {
+    const orangeCount = state.tables.filter(t => t.zone === 'orange').length;
+    if (orangeCount === 0) {
+      showToast('ℹ️ 橘色擴充區目前沒有桌子。');
+      return;
+    }
+    state.tables = state.tables.filter(t => t.zone !== 'orange');
+    if (!state.tables.some(t => t.id === state.selectedTableId) && state.tables.length > 0) {
+      state.selectedTableId = state.tables[0].id;
+    }
+    saveToLocalStorage(true);
+    renderAll();
+    showToast(`🗑️ 已清空橘色擴充區的 ${orangeCount} 張桌子。`);
+  }
+
+  function deleteSelectedTable() {
+    if (state.tables.length <= 1) {
+      showToast('⚠️ 至少需保留一張桌子！');
+      return;
+    }
+    const current = getSelectedTable();
+    if (!current) return;
+    const removedLabel = `${current.tableNumber} (${current.alias || '未命名'})`;
+    state.tables = state.tables.filter(t => t.id !== current.id);
+    state.selectedTableId = state.tables[0].id;
+    state.selectedSeatIndex = 1;
+    saveToLocalStorage(true);
+    renderAll();
+    showToast(`🗑️ 已刪除桌次：${removedLabel}`);
+  }
+
+  function resetToDefaultLayout() {
+    state.tables = getDefaultTables();
+    state.selectedTableId = state.tables[0].id;
+    state.selectedSeatIndex = 1;
+    state.swapSourceSeatIndex = null;
+    saveToLocalStorage(true);
+    renderAll();
+    showToast('↺ 已重置為金饌廳預設 15 桌比例配置！');
+  }
+
+  // ==================== Rendering Engine ====================
+  function renderAll() {
+    renderStatistics();
+    renderPosterTables();
+    renderInspector();
+  }
+
+  function renderStatistics() {
+    const totalTables = state.tables.length;
+    const orangeTables = state.tables.filter(t => t.zone === 'orange').length;
+    const totalSeats = totalTables * SEATS_PER_TABLE;
+
+    let seatedCount = 0;
+    let meatCount = 0;
+    let vegCount = 0;
+    let childCount = 0;
+    let giftCount = 0;
+
+    state.tables.forEach(t => {
+      t.seats.forEach(s => {
+        const occupied = Boolean(s.name && s.name.trim()) || s.isChildSeat;
+        if (occupied) {
+          seatedCount++;
+          if (s.diet === 'veg') {
+            vegCount++;
+          } else {
+            meatCount++;
+          }
+        }
+        if (s.isChildSeat) childCount++;
+        if (s.hasGift) giftCount++;
+      });
+    });
+
+    const elTableCount = document.getElementById('stat-table-count');
+    const elPosterCounter = document.getElementById('poster-table-counter');
+    const elOrangeCount = document.getElementById('orange-zone-count');
+    const elSeated = document.getElementById('stat-seated-count');
+    const elMeat = document.getElementById('stat-meat-count');
+    const elVeg = document.getElementById('stat-veg-count');
+    const elChild = document.getElementById('stat-child-count');
+    const elGift = document.getElementById('stat-gift-count');
+
+    if (elTableCount) elTableCount.textContent = String(totalTables);
+    if (elPosterCounter) elPosterCounter.textContent = `桌數：${totalTables}桌`;
+    if (elOrangeCount) elOrangeCount.textContent = String(orangeTables);
+    if (elSeated) elSeated.textContent = `${seatedCount} / ${totalSeats}`;
+    if (elMeat) elMeat.textContent = String(meatCount);
+    if (elVeg) elVeg.textContent = String(vegCount);
+    if (elChild) elChild.textContent = String(childCount);
+    if (elGift) elGift.textContent = String(giftCount);
+
+    const hintEl = document.getElementById('orange-zone-hint');
+    if (hintEl) {
+      hintEl.style.opacity = orangeTables > 0 ? '0.35' : '0.95';
+    }
+  }
+
+  function tableMatchesFilterAndSearch(table) {
+    const q = state.searchQuery.trim().toLowerCase();
+    let matchesSearch = true;
+    if (q) {
+      const inTableMeta =
+        table.tableNumber.toLowerCase().includes(q) ||
+        (table.alias || '').toLowerCase().includes(q);
+      const inSeats = table.seats.some(s =>
+        (s.name || '').toLowerCase().includes(q) ||
+        (s.giftNote || '').toLowerCase().includes(q)
+      );
+      matchesSearch = inTableMeta || inSeats;
+    }
+
+    let matchesHighlight = true;
+    if (state.highlightMode === 'veg') {
+      matchesHighlight = table.seats.some(s => s.diet === 'veg' && (s.name || s.isChildSeat));
+    } else if (state.highlightMode === 'child') {
+      matchesHighlight = table.seats.some(s => s.isChildSeat);
+    } else if (state.highlightMode === 'gift') {
+      matchesHighlight = table.seats.some(s => s.hasGift);
+    } else if (state.highlightMode === 'empty') {
+      matchesHighlight = table.seats.some(s => !s.name && !s.isChildSeat);
+    }
+
+    return matchesSearch && matchesHighlight;
+  }
+
+  function renderPosterTables() {
+    const layer = document.getElementById('tables-layer');
+    if (!layer) return;
+
+    const radiusPx = 56; // 10 個電影院座位小格環繞半徑
+    const centerPx = 73; // table-node 146x146 的中心點
+
+    layer.innerHTML = state.tables.map(table => {
+      const isSelected = table.id === state.selectedTableId;
+      const isMain = table.tableNumber === '主桌' || table.id === 'T_MAIN';
+      const isOrange = table.zone === 'orange';
+      const isMatch = tableMatchesFilterAndSearch(table);
+
+      const seated = table.seats.filter(s => (s.name && s.name.trim()) || s.isChildSeat).length;
+      const vegs = table.seats.filter(s => (s.name || s.isChildSeat) && s.diet === 'veg').length;
+      const childs = table.seats.filter(s => s.isChildSeat).length;
+      const gifts = table.seats.filter(s => s.hasGift).length;
+
+      // 產生環繞 10 個電影院座位小格
+      const seatsHtml = table.seats.map((seat, idx) => {
+        const angle = (idx / SEATS_PER_TABLE) * 2 * Math.PI - Math.PI / 2;
+        const sx = centerPx + radiusPx * Math.cos(angle);
+        const sy = centerPx + radiusPx * Math.sin(angle);
+
+        const hasName = Boolean(seat.name && seat.name.trim());
+        const classes = ['seat-mini-box'];
+        if (hasName) classes.push('occupied');
+        if (seat.diet === 'veg' && (hasName || seat.isChildSeat)) classes.push('diet-veg');
+        if (seat.isChildSeat) classes.push('child-seat');
+
+        // 兒童座椅更換顯示：優先顯示 👶 圖示 + 簡稱；一般入座顯示人名前 2~3 字；空位顯示題號
+        let displayLabel = String(seat.seatIndex);
+        if (seat.isChildSeat) {
+          const shortName = hasName ? seat.name.trim().slice(0, 2) : '兒童';
+          displayLabel = `👶${shortName}`;
+        } else if (hasName) {
+          displayLabel = seat.name.trim().slice(0, 3);
+        }
+
+        // 右上角微型標記（素食 🥗 / 婚禮小物 🎁）
+        let badges = '';
+        if (seat.diet === 'veg' && (hasName || seat.isChildSeat)) {
+          badges += '<span class="micro-badge" title="素食">🥗</span>';
+        }
+        if (seat.hasGift) {
+          badges += `<span class="micro-badge" title="婚禮小物：${escapeHtml(seat.giftNote || '已標記')}">🎁</span>`;
+        }
+
+        const tooltipParts = [
+          `${table.tableNumber}桌 - 座位 #${seat.seatIndex}`,
+          hasName ? `賓客：${seat.name}` : '（空位）',
+          `飲食：${seat.diet === 'veg' ? '🥗 素食' : '🥩 葷食'}`,
+          seat.isChildSeat ? '👶 兒童座椅' : '',
+          seat.hasGift ? `🎁 小物/驚喜：${seat.giftNote || '有'}` : ''
+        ].filter(Boolean).join('｜');
+
+        return `
+          <div class="${classes.join(' ')}"
+               style="left: ${sx.toFixed(1)}px; top: ${sy.toFixed(1)}px;"
+               data-table-id="${escapeHtml(table.id)}"
+               data-seat-index="${seat.seatIndex}"
+               title="${escapeHtml(tooltipParts)}">
+            <span class="seat-mini-text">${escapeHtml(displayLabel)}</span>
+            ${badges ? `<div class="seat-micro-badges">${badges}</div>` : ''}
+          </div>
+        `;
+      }).join('');
+
+      let miniSummary = `${seated}/10`;
+      if (childs > 0) miniSummary += ` 👶${childs}`;
+      if (vegs > 0) miniSummary += ` 🥗${vegs}`;
+      if (gifts > 0) miniSummary += ` 🎁${gifts}`;
+
+      const nodeClasses = [
+        'table-node',
+        isMain ? 'main-table' : '',
+        isOrange ? 'orange-table' : '',
+        isSelected ? 'selected' : '',
+        !isMatch ? 'dimmed' : ''
+      ].filter(Boolean).join(' ');
+
+      return `
+        <div class="${nodeClasses}"
+             id="poster-table-${escapeHtml(table.id)}"
+             data-table-id="${escapeHtml(table.id)}"
+             style="left: ${table.x.toFixed(2)}%; top: ${table.y.toFixed(2)}%;">
+          ${seatsHtml}
+          <div class="table-circle" data-table-id="${escapeHtml(table.id)}">
+            <div class="table-number-label">${escapeHtml(table.tableNumber)}</div>
+            ${table.alias ? `<div class="table-alias-label" title="${escapeHtml(table.alias)}">${escapeHtml(table.alias)}</div>` : ''}
+            <div class="table-occupancy-badge">${escapeHtml(miniSummary)}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderInspector() {
+    const table = getSelectedTable();
+    if (!table) return;
+
+    const heading = document.getElementById('inspector-heading');
+    const inputNum = document.getElementById('input-table-number');
+    const inputAlias = document.getElementById('input-table-alias');
+    const wheelNum = document.getElementById('wheel-table-num');
+    const wheelAlias = document.getElementById('wheel-table-alias');
+    const wheelStats = document.getElementById('wheel-table-stats');
+
+    const seatedCount = table.seats.filter(s => (s.name && s.name.trim()) || s.isChildSeat).length;
+    const zoneTag = table.zone === 'orange' ? '［🍊 橘色擴充區］' : '［🏛️ 主宴會廳］';
+
+    if (heading) {
+      heading.textContent = `🪑 ${table.tableNumber}（${table.alias || '未設別稱'}）${zoneTag}`;
+    }
+    if (inputNum && document.activeElement !== inputNum) {
+      inputNum.value = table.tableNumber;
+    }
+    if (inputAlias && document.activeElement !== inputAlias) {
+      inputAlias.value = table.alias || '';
+    }
+    if (wheelNum) wheelNum.textContent = table.tableNumber;
+    if (wheelAlias) wheelAlias.textContent = table.alias || '點擊上方輸入別稱';
+    if (wheelStats) wheelStats.textContent = `已排 ${seatedCount} / ${SEATS_PER_TABLE} 位`;
+
+    renderCinemaWheelSeats(table);
+    renderSelectedSeatForm(table);
+    renderCompactSeatList(table);
+    syncBatchTextarea(table);
+  }
+
+  function renderCinemaWheelSeats(table) {
+    const container = document.getElementById('cinema-wheel-seats');
+    if (!container) return;
+
+    const box = document.getElementById('cinema-wheel-box');
+    const w = (box && box.clientWidth) ? box.clientWidth : 410;
+    const h = 315;
+    const cx = w / 2;
+    const cy = h / 2;
+    const rx = Math.min(155, (w / 2) - 46);
+    const ry = 118;
+
+    container.innerHTML = table.seats.map((seat, idx) => {
+      const angle = (idx / SEATS_PER_TABLE) * 2 * Math.PI - Math.PI / 2;
+      const x = cx + rx * Math.cos(angle);
+      const y = cy + ry * Math.sin(angle);
+
+      const isCurrent = seat.seatIndex === state.selectedSeatIndex;
+      const isSwapSource = seat.seatIndex === state.swapSourceSeatIndex;
+      const hasName = Boolean(seat.name && seat.name.trim());
+
+      const classes = ['cinema-seat-slot'];
+      if (isCurrent) classes.push('active-seat');
+      if (isSwapSource) classes.push('swap-source');
+      if (seat.isChildSeat) classes.push('is-child');
+      if (seat.diet === 'veg' && (hasName || seat.isChildSeat)) classes.push('is-veg');
+
+      const icons = [
+        seat.isChildSeat ? '👶' : '',
+        (seat.diet === 'veg' && (hasName || seat.isChildSeat)) ? '🥗' : '',
+        seat.hasGift ? '🎁' : ''
+      ].filter(Boolean).join('');
+
+      const nameDisplay = seat.isChildSeat
+        ? (hasName ? `👶 ${seat.name}` : '👶 兒童座椅')
+        : (hasName ? seat.name : '空位');
+
+      return `
+        <div class="${classes.join(' ')}"
+             style="left: ${x.toFixed(1)}px; top: ${y.toFixed(1)}px;"
+             data-wheel-seat="${seat.seatIndex}"
+             title="點擊編輯座位 #${seat.seatIndex}（或於換位模式點擊對調）">
+          <div class="cinema-seat-top">
+            <span>#${seat.seatIndex}</span>
+            <span>${icons}</span>
+          </div>
+          <div class="cinema-seat-name ${(!hasName && !seat.isChildSeat) ? 'empty' : ''}">
+            ${escapeHtml(nameDisplay)}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderSelectedSeatForm(table) {
+    const seat = table.seats.find(s => s.seatIndex === state.selectedSeatIndex) || table.seats[0];
+    if (!seat) return;
+
+    const badgeEl = document.getElementById('editor-seat-badge');
+    const statusEl = document.getElementById('editor-seat-status');
+    const nameInput = document.getElementById('input-seat-guest-name');
+    const giftNoteInput = document.getElementById('input-seat-gift-note');
+    const btnMeat = document.getElementById('btn-seat-diet-meat');
+    const btnVeg = document.getElementById('btn-seat-diet-veg');
+    const btnChild = document.getElementById('btn-seat-child-toggle');
+    const btnGift = document.getElementById('btn-seat-gift-toggle');
+    const btnSwap = document.getElementById('btn-swap-seat-mode');
+
+    if (badgeEl) {
+      badgeEl.textContent = `${table.tableNumber} 桌 — 座位 #${seat.seatIndex}`;
+    }
+    if (statusEl) {
+      const tags = [];
+      if (seat.name) tags.push(seat.name);
+      if (seat.isChildSeat) tags.push('👶兒童椅');
+      tags.push(seat.diet === 'veg' ? '🥗素食' : '🥩葷食');
+      if (seat.hasGift) tags.push(`🎁${seat.giftNote || '婚禮小物'}`);
+      statusEl.textContent = tags.length ? `（${tags.join('・')}）` : '（空位）';
+    }
+
+    if (nameInput && document.activeElement !== nameInput) {
+      nameInput.value = seat.name || '';
+    }
+    if (giftNoteInput && document.activeElement !== giftNoteInput) {
+      giftNoteInput.value = seat.giftNote || '';
+    }
+
+    if (btnMeat) {
+      btnMeat.className = 'toggle-option' + (seat.diet !== 'veg' ? ' active-meat' : '');
+    }
+    if (btnVeg) {
+      btnVeg.className = 'toggle-option' + (seat.diet === 'veg' ? ' active-veg' : '');
+    }
+    if (btnChild) {
+      btnChild.className = 'toggle-option' + (seat.isChildSeat ? ' active-child' : '');
+      btnChild.innerHTML = seat.isChildSeat ? '👶 兒童座椅（已啟用）' : '👶 設為兒童座椅';
+    }
+    if (btnGift) {
+      btnGift.className = 'toggle-option' + (seat.hasGift ? ' active-gift' : '');
+      btnGift.innerHTML = seat.hasGift ? '🎁 已放小物/驚喜' : '🎁 放置小物/驚喜';
+    }
+    if (btnSwap) {
+      if (state.swapSourceSeatIndex === seat.seatIndex) {
+        btnSwap.textContent = '✨ 請點選目標座位對調 (點此取消)';
+        btnSwap.classList.add('btn-orange');
+      } else {
+        btnSwap.textContent = '⇄ 與他座換位';
+        btnSwap.classList.remove('btn-orange');
+      }
+    }
+  }
+
+  function renderCompactSeatList(table) {
+    const listEl = document.getElementById('seat-list-compact');
+    if (!listEl) return;
+
+    listEl.innerHTML = table.seats.map(seat => {
+      const isActive = seat.seatIndex === state.selectedSeatIndex;
+      const hasName = Boolean(seat.name && seat.name.trim());
+      const badges = [];
+
+      if (seat.isChildSeat) {
+        badges.push('<span style="background:#fef3c7;color:#92400e;padding:2px 6px;border-radius:6px;font-size:0.7rem;font-weight:700;">👶 兒童座椅</span>');
+      }
+      if (hasName || seat.isChildSeat) {
+        if (seat.diet === 'veg') {
+          badges.push('<span style="background:#d1fae5;color:#065f46;padding:2px 6px;border-radius:6px;font-size:0.7rem;font-weight:700;">🥗 素食</span>');
+        } else {
+          badges.push('<span style="background:#f1f5f9;color:#475569;padding:2px 6px;border-radius:6px;font-size:0.7rem;font-weight:600;">🥩 葷</span>');
+        }
+      }
+      if (seat.hasGift) {
+        badges.push(`<span style="background:#ede9fe;color:#5b21b6;padding:2px 6px;border-radius:6px;font-size:0.7rem;font-weight:700;">🎁 ${escapeHtml(seat.giftNote || '小物')}</span>`);
+      }
+
+      return `
+        <div class="seat-row-item ${isActive ? 'active' : ''} ${seat.isChildSeat ? 'is-child' : ''}"
+             data-row-seat="${seat.seatIndex}">
+          <div class="seat-row-num">${seat.isChildSeat ? '👶' : seat.seatIndex}</div>
+          <div style="font-size: 0.83rem; font-weight: ${hasName ? '800' : '500'}; color: ${hasName ? '#0f172a' : '#94a3b8'};">
+            ${escapeHtml(hasName ? seat.name : (seat.isChildSeat ? '兒童專用座位' : '（空位 - 點擊編輯）'))}
+          </div>
+          <div style="display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end;">
+            ${badges.join('')}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function syncBatchTextarea(table) {
+    const textarea = document.getElementById('textarea-batch-seats');
+    if (!textarea || document.activeElement === textarea) return;
+
+    const lines = table.seats.map(seat => {
+      const parts = [];
+      if (seat.name) parts.push(seat.name);
+      if (seat.diet === 'veg' && (seat.name || seat.isChildSeat)) parts.push('素食');
+      if (seat.isChildSeat) parts.push('兒童椅');
+      if (seat.hasGift) {
+        parts.push(seat.giftNote ? `小物:${seat.giftNote}` : '小物');
+      }
+      return parts.join(', ');
+    });
+    textarea.value = lines.join('\n');
+  }
+
+  // ==================== Batch Text Parsing & Whole-Table Updates ====================
+  function applyBatchTextToTable() {
+    const table = getSelectedTable();
+    const textarea = document.getElementById('textarea-batch-seats');
+    if (!table || !textarea) return;
+
+    const rawLines = textarea.value.split(/\r?\n/);
+    for (let i = 0; i < SEATS_PER_TABLE; i++) {
+      const line = (rawLines[i] || '').trim();
+      if (!line) {
+        table.seats[i] = {
+          seatIndex: i + 1,
+          name: '',
+          diet: 'meat',
+          isChildSeat: false,
+          hasGift: false,
+          giftNote: ''
+        };
+        continue;
+      }
+
+      const tokens = line.split(/[,，、/｜|]+/).map(s => s.trim()).filter(Boolean);
+      let name = '';
+      let diet = 'meat';
+      let isChildSeat = false;
+      let hasGift = false;
+      let giftNote = '';
+
+      tokens.forEach((tok, idx) => {
+        const lower = tok.toLowerCase();
+        if (tok === '素' || tok === '素食' || lower === 'veg') {
+          diet = 'veg';
+        } else if (tok === '葷' || tok === '葷食' || lower === 'meat') {
+          diet = 'meat';
+        } else if (tok.includes('兒童') || tok.includes('寶寶') || tok.includes('安全椅') || lower === 'child') {
+          isChildSeat = true;
+          if (idx === 0 && tokens.length === 1) {
+            name = tok;
+          }
+        } else if (tok.startsWith('小物:') || tok.startsWith('小物：') || tok.startsWith('驚喜:') || tok.startsWith('驚喜：')) {
+          hasGift = true;
+          giftNote = tok.replace(/^(小物|驚喜)[:：]/, '').trim();
+        } else if (tok === '小物' || tok === '婚禮小物' || tok === '驚喜' || tok === '小驚喜') {
+          hasGift = true;
+        } else if (!name) {
+          name = tok;
+        } else {
+          // 額外描述視為婚禮小物或驚喜備註
+          hasGift = true;
+          giftNote = giftNote ? `${giftNote} ${tok}` : tok;
+        }
+      });
+
+      table.seats[i] = {
+        seatIndex: i + 1,
+        name,
+        diet,
+        isChildSeat,
+        hasGift,
+        giftNote
+      };
+    }
+
+    saveToLocalStorage(true);
+    renderAll();
+    showToast(`📋 已整桌更新「${table.tableNumber} 桌」的 1~10 號座位清單！`);
+  }
+
+  // ==================== RSVP Import to Current Table ====================
+  async function fetchCloudRsvpList(silent = false) {
+    try {
+      const response = await fetch(API_URL + '?action=rsvp');
+      const result = await response.json();
+      if (result && result.status === 'success' && result.data && Array.isArray(result.data.rsvp) && result.data.rsvp.length > 0) {
+        state.rsvpList = result.data.rsvp;
+        renderRsvpImportList();
+        if (!silent) {
+          showToast(`💌 已同步 ${state.rsvpList.length} 筆雲端報名清單！`);
+        }
+        return;
+      }
+    } catch (err) {
+      console.warn('RSVP fetch fallback:', err);
+    }
+    renderRsvpImportList();
+    if (!silent) {
+      showToast('ℹ️ 已載入預設報名清單範例供快速排桌。');
+    }
+  }
+
+  function renderRsvpImportList() {
+    const container = document.getElementById('rsvp-card-list');
+    if (!container) return;
+
+    if (!state.rsvpList || state.rsvpList.length === 0) {
+      container.innerHTML = '<div style="padding:18px;text-align:center;color:#64748b;font-size:0.84rem;">尚無報名資料</div>';
+      return;
+    }
+
+    container.innerHTML = state.rsvpList.map((item, idx) => {
+      const name = String(item['姓名'] || '').trim();
+      const side = String(item['陣營'] || '').trim();
+      const pax = Math.max(1, parseInt(item['參與人數'], 10) || 1);
+      const dietStr = String(item['葷素選擇'] || '葷食').trim();
+      const childCount = parseInt(item['兒童座椅'], 10) || 0;
+      const note = String(item['備註/祝福'] || '').trim();
+
+      // 檢查是否已經排入某桌
+      let assignedTable = '';
+      state.tables.forEach(t => {
+        if (t.seats.some(s => s.name && (s.name === name || s.name.startsWith(name + '(')))) {
+          assignedTable = t.tableNumber;
+        }
+      });
+
+      return `
+        <div class="rsvp-guest-card">
+          <div class="rsvp-guest-info">
+            <div class="rsvp-guest-name">
+              ${escapeHtml(name)}
+              <span style="font-size:0.72rem;font-weight:700;padding:1px 6px;border-radius:999px;background:#e0f2fe;color:#0369a1;">
+                ${escapeHtml(side || '親友')}・共 ${pax} 人
+              </span>
+              ${assignedTable ? `<span style="font-size:0.72rem;font-weight:700;padding:1px 6px;border-radius:999px;background:#d1fae5;color:#065f46;">已排 ${escapeHtml(assignedTable)} 桌</span>` : ''}
+            </div>
+            <div class="rsvp-guest-meta">
+              <span>🍽️ ${escapeHtml(dietStr)}</span>
+              ${childCount > 0 ? `<span>👶 兒童椅 ${childCount} 張</span>` : ''}
+              ${note ? `<span>📝 ${escapeHtml(note)}</span>` : ''}
+            </div>
+          </div>
+          <button type="button" class="btn btn-sm btn-primary" data-rsvp-idx="${idx}">
+            ＋ 帶入本桌 (${pax}位)
+          </button>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function importRsvpGuestToCurrentTable(rsvpIndex) {
+    const item = state.rsvpList[rsvpIndex];
+    const table = getSelectedTable();
+    if (!item || !table) return;
+
+    const baseName = String(item['姓名'] || '貴賓').trim();
+    const pax = Math.max(1, parseInt(item['參與人數'], 10) || 1);
+    const dietStr = String(item['葷素選擇'] || '').trim();
+    const childCount = Math.max(0, parseInt(item['兒童座椅'], 10) || 0);
+
+    // 解析素食人數
+    let vegQuota = 0;
+    const vegMatch = dietStr.match(/素食?\s*[:：]?\s*(\d+)/);
+    if (vegMatch) {
+      vegQuota = parseInt(vegMatch[1], 10) || 0;
+    } else if (dietStr.includes('素')) {
+      vegQuota = pax;
+    }
+    let childQuota = childCount;
+
+    const emptySeats = table.seats.filter(s => !s.name && !s.isChildSeat);
+    if (emptySeats.length < pax) {
+      showToast(`⚠️ 「${table.tableNumber} 桌」目前僅剩 ${emptySeats.length} 個空位，無法一次放入 ${pax} 人！`);
+      return;
+    }
+
+    for (let i = 0; i < pax; i++) {
+      const targetSeat = emptySeats[i];
+      const isChild = childQuota > 0 && (i >= pax - childCount);
+      if (isChild) childQuota--;
+
+      const isVeg = vegQuota > 0;
+      if (isVeg) vegQuota--;
+
+      targetSeat.name = i === 0
+        ? baseName
+        : (isChild ? `${baseName}(兒童椅)` : `${baseName}(攜伴${i + 1})`);
+      targetSeat.diet = isVeg ? 'veg' : 'meat';
+      targetSeat.isChildSeat = isChild;
+    }
+
+    saveToLocalStorage(true);
+    renderAll();
+    renderRsvpImportList();
+    showToast(`🎉 已將「${baseName}」共 ${pax} 位賓客帶入 ${table.tableNumber} 桌！`);
+  }
+
+  // ==================== Excel (.xlsx) & JSON Export / Import ====================
+  function exportToExcel() {
+    const seatRows = [];
+    const tableRows = [];
+
+    state.tables.forEach(t => {
+      const seated = t.seats.filter(s => (s.name && s.name.trim()) || s.isChildSeat).length;
+      const vegs = t.seats.filter(s => (s.name || s.isChildSeat) && s.diet === 'veg').length;
+      const childs = t.seats.filter(s => s.isChildSeat).length;
+      const gifts = t.seats.filter(s => s.hasGift).length;
+
+      tableRows.push({
+        '桌次ID': t.id,
+        '桌號': t.tableNumber,
+        '座位別稱': t.alias || '',
+        '區域': t.zone === 'orange' ? '橘色擴充區' : '主宴會廳',
+        'X座標': Number(t.x.toFixed(2)),
+        'Y座標': Number(t.y.toFixed(2)),
+        '座位上限': SEATS_PER_TABLE,
+        '已坐人數': seated,
+        '素食人數': vegs,
+        '兒童座椅數': childs,
+        '婚禮小物數': gifts
+      });
+
+      t.seats.forEach(s => {
+        seatRows.push({
+          '姓名': s.name || '',
+          '桌號': t.tableNumber,
+          '座位別稱': t.alias || '',
+          '座位編號': s.seatIndex,
+          '飲食': s.diet === 'veg' ? '素食' : '葷食',
+          '兒童座椅': s.isChildSeat ? '是' : '否',
+          '婚禮小物': s.hasGift ? '是' : '否',
+          '小物備註': s.giftNote || '',
+          '桌次ID': t.id,
+          '區域': t.zone === 'orange' ? 'orange' : 'main',
+          'X座標': Number(t.x.toFixed(2)),
+          'Y座標': Number(t.y.toFixed(2))
+        });
+      });
+    });
+
+    if (typeof XLSX !== 'undefined' && XLSX.utils) {
+      const wb = XLSX.utils.book_new();
+      const wsSeats = XLSX.utils.json_to_sheet(seatRows);
+      const wsTables = XLSX.utils.json_to_sheet(tableRows);
+      XLSX.utils.book_append_sheet(wb, wsSeats, '座位明細表');
+      XLSX.utils.book_append_sheet(wb, wsTables, '桌次配置表');
+      XLSX.writeFile(wb, '金饌廳_婚宴座位安排表.xlsx');
+      showToast('📥 已匯出 Excel 檔案：金饌廳_婚宴座位安排表.xlsx');
+    } else {
+      // Fallback: 匯出 JSON 檔案
+      const blob = new Blob([JSON.stringify({ tables: state.tables }, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = '金饌廳_婚宴座位安排表.json';
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('📥 已匯出座位設定檔 (.json)');
+    }
+  }
+
+  function handleImportFile(file) {
+    if (!file) return;
+    const fileName = file.name.toLowerCase();
+
+    if (fileName.endsWith('.json')) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          const rawTables = Array.isArray(parsed) ? parsed : parsed.tables;
+          if (Array.isArray(rawTables) && rawTables.length > 0) {
+            state.tables = normalizeTables(rawTables);
+            state.selectedTableId = state.tables[0].id;
+            state.selectedSeatIndex = 1;
+            saveToLocalStorage(true);
+            renderAll();
+            showToast(`📤 已從 JSON 成功匯入 ${state.tables.length} 桌座位配置！`);
+          }
+        } catch (err) {
+          showToast('⚠️ JSON 檔案格式不正確，請確認內容。');
+        }
+      };
+      reader.readAsText(file);
+      return;
+    }
+
+    // Excel (.xlsx / .xls) 匯入解析
+    if (typeof XLSX === 'undefined') {
+      showToast('⚠️ Excel 解析元件未載入，請使用 JSON 檔案匯入。');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+
+        // 優先讀取「座位明細表」或第一個分頁
+        const sheetName = workbook.SheetNames.includes('座位明細表')
+          ? '座位明細表'
+          : workbook.SheetNames[0];
+        const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: '' });
+
+        // 若有「桌次配置表」也一併讀取其座標與別稱
+        let configRows = [];
+        if (workbook.SheetNames.includes('桌次配置表')) {
+          configRows = XLSX.utils.sheet_to_json(workbook.Sheets['桌次配置表'], { defval: '' });
+        }
+
+        const reconstructed = reconstructTablesFromSheetRows(rows);
+        if (configRows.length > 0) {
+          configRows.forEach(cfg => {
+            const target = reconstructed.find(t =>
+              t.id === String(cfg['桌次ID'] || '').trim() ||
+              t.tableNumber === String(cfg['桌號'] || '').trim()
+            );
+            if (target) {
+              if (cfg['座位別稱']) target.alias = String(cfg['座位別稱']).trim();
+              if (Number.isFinite(parseFloat(cfg['X座標']))) target.x = parseFloat(cfg['X座標']);
+              if (Number.isFinite(parseFloat(cfg['Y座標']))) target.y = parseFloat(cfg['Y座標']);
+              if (String(cfg['區域'] || '').includes('橘色')) target.zone = 'orange';
+            }
+          });
+        }
+
+        if (reconstructed.length > 0) {
+          state.tables = normalizeTables(reconstructed);
+          state.selectedTableId = state.tables[0].id;
+          state.selectedSeatIndex = 1;
+          saveToLocalStorage(true);
+          renderAll();
+          showToast(`📤 已從 Excel 成功匯入 ${state.tables.length} 桌與完整座位設定！`);
+        } else {
+          showToast('⚠️ Excel 中未找到有效的桌次資料列。');
+        }
+      } catch (err) {
+        console.error('Excel import error:', err);
+        showToast('⚠️ 匯入 Excel 失敗，請確認檔案格式。');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  // ==================== Drag & Drop Table Positioning on Poster ====================
+  let dragContext = null;
+
+  function initPosterDragAndClick() {
+    const poster = document.getElementById('banquet-poster');
+    const orangeZoneEl = document.getElementById('orange-extension-zone');
+    if (!poster) return;
+
+    poster.addEventListener('pointerdown', e => {
+      // 若點擊的是某個座位小格，直接選取該桌與該座位
+      const seatBox = e.target.closest('.seat-mini-box');
+      if (seatBox) {
+        e.stopPropagation();
+        const tblId = seatBox.dataset.tableId;
+        const seatIdx = parseInt(seatBox.dataset.seatIndex, 10);
+        if (tblId) state.selectedTableId = tblId;
+        if (seatIdx >= 1 && seatIdx <= SEATS_PER_TABLE) {
+          state.selectedSeatIndex = seatIdx;
+        }
+        state.swapSourceSeatIndex = null;
+        switchInspectorTab('seat-map');
+        renderAll();
+        return;
+      }
+
+      // 若點擊的是圓桌本體，啟動選取與可拖曳狀態
+      const tableNode = e.target.closest('.table-node');
+      if (!tableNode) return;
+
+      const tblId = tableNode.dataset.tableId;
+      const table = state.tables.find(t => t.id === tblId);
+      if (!table) return;
+
+      state.selectedTableId = tblId;
+      renderInspector();
+      document.querySelectorAll('.table-node').forEach(el => {
+        el.classList.toggle('selected', el.dataset.tableId === tblId);
+      });
+
+      const rect = poster.getBoundingClientRect();
+      dragContext = {
+        tableId: tblId,
+        nodeEl: tableNode,
+        startClientX: e.clientX,
+        startClientY: e.clientY,
+        origX: table.x,
+        origY: table.y,
+        posterWidth: rect.width,
+        posterHeight: rect.height,
+        moved: false
+      };
+
+      tableNode.classList.add('dragging');
+      if (tableNode.setPointerCapture) {
+        try { tableNode.setPointerCapture(e.pointerId); } catch (_) {}
+      }
+    });
+
+    window.addEventListener('pointermove', e => {
+      if (!dragContext) return;
+      const dxPx = e.clientX - dragContext.startClientX;
+      const dyPx = e.clientY - dragContext.startClientY;
+
+      if (Math.abs(dxPx) > 3 || Math.abs(dyPx) > 3) {
+        dragContext.moved = true;
+      }
+      if (!dragContext.moved) return;
+
+      const dxPct = (dxPx / dragContext.posterWidth) * 100;
+      const dyPct = (dyPx / dragContext.posterHeight) * 100;
+
+      let nextX = dragContext.origX + dxPct;
+      let nextY = dragContext.origY + dyPct;
+
+      if (state.gridSnap) {
+        nextX = Math.round(nextX / 1.5) * 1.5;
+        nextY = Math.round(nextY / 1.2) * 1.2;
+      }
+
+      nextX = Math.max(7.5, Math.min(92.5, nextX));
+      nextY = Math.max(19.0, Math.min(91.5, nextY));
+
+      const table = state.tables.find(t => t.id === dragContext.tableId);
+      if (table) {
+        table.x = nextX;
+        table.y = nextY;
+        table.zone = nextY >= ORANGE_ZONE_Y_MIN ? 'orange' : 'main';
+      }
+
+      if (dragContext.nodeEl) {
+        dragContext.nodeEl.style.left = `${nextX.toFixed(2)}%`;
+        dragContext.nodeEl.style.top = `${nextY.toFixed(2)}%`;
+        dragContext.nodeEl.classList.toggle('orange-table', nextY >= ORANGE_ZONE_Y_MIN);
+      }
+
+      if (orangeZoneEl) {
+        orangeZoneEl.classList.toggle('drag-over', nextY >= ORANGE_ZONE_Y_MIN);
+      }
+    });
+
+    window.addEventListener('pointerup', () => {
+      if (!dragContext) return;
+      const wasMoved = dragContext.moved;
+      if (dragContext.nodeEl) {
+        dragContext.nodeEl.classList.remove('dragging');
+      }
+      if (orangeZoneEl) {
+        orangeZoneEl.classList.remove('drag-over');
+      }
+      dragContext = null;
+
+      if (wasMoved) {
+        saveToLocalStorage(true);
+        renderAll();
+      }
+    });
+  }
+
+  // ==================== Event Bindings ====================
+  function bindEvents() {
+    initPosterDragAndClick();
+
+    // Top bar table actions
+    const btnAddMain = document.getElementById('btn-add-main-table');
+    if (btnAddMain) btnAddMain.addEventListener('click', () => addTable('main'));
+
+    const btnAddOrange = document.getElementById('btn-add-orange-table');
+    if (btnAddOrange) btnAddOrange.addEventListener('click', () => addTable('orange'));
+
+    // Orange extension box quick controls (＋1桌 / 設為5桌 / 設為10桌 / 清空)
+    const btnOrangeAdd1 = document.getElementById('btn-orange-add-1');
+    if (btnOrangeAdd1) btnOrangeAdd1.addEventListener('click', () => addTable('orange'));
+
+    const btnOrange5 = document.getElementById('btn-orange-preset-5');
+    if (btnOrange5) btnOrange5.addEventListener('click', () => setOrangeZoneTableCount(5));
+
+    const btnOrange10 = document.getElementById('btn-orange-preset-10');
+    if (btnOrange10) btnOrange10.addEventListener('click', () => setOrangeZoneTableCount(10));
+
+    const btnOrangeClear = document.getElementById('btn-orange-clear');
+    if (btnOrangeClear) btnOrangeClear.addEventListener('click', clearOrangeZoneTables);
+
+    // Delete table & Reset layout
+    const btnDeleteTable = document.getElementById('btn-delete-selected-table');
+    if (btnDeleteTable) btnDeleteTable.addEventListener('click', deleteSelectedTable);
+
+    const btnResetLayout = document.getElementById('btn-reset-default-layout');
+    if (btnResetLayout) btnResetLayout.addEventListener('click', resetToDefaultLayout);
+
+    // Cloud Sync & Excel Import/Export
+    const btnSaveCloud = document.getElementById('btn-save-cloud');
+    if (btnSaveCloud) btnSaveCloud.addEventListener('click', saveToCloud);
+
+    const btnLoadCloud = document.getElementById('btn-load-cloud');
+    if (btnLoadCloud) btnLoadCloud.addEventListener('click', loadFromCloud);
+
+    const btnExportExcel = document.getElementById('btn-export-excel');
+    if (btnExportExcel) btnExportExcel.addEventListener('click', exportToExcel);
+
+    const btnImportTrigger = document.getElementById('btn-import-excel-trigger');
+    const inputImportFile = document.getElementById('input-import-file');
+    if (btnImportTrigger && inputImportFile) {
+      btnImportTrigger.addEventListener('click', () => inputImportFile.click());
+      inputImportFile.addEventListener('change', e => {
+        const file = e.target.files && e.target.files[0];
+        if (file) {
+          handleImportFile(file);
+          inputImportFile.value = '';
+        }
+      });
+    }
+
+    // Search & Highlight Filter Chips
+    const searchInput = document.getElementById('input-search-guest');
+    const clearSearchBtn = document.getElementById('btn-clear-search');
+    if (searchInput) {
+      searchInput.addEventListener('input', e => {
+        state.searchQuery = e.target.value;
+        if (clearSearchBtn) {
+          clearSearchBtn.style.display = state.searchQuery ? 'block' : 'none';
+        }
+        renderPosterTables();
+      });
+    }
+    if (clearSearchBtn) {
+      clearSearchBtn.addEventListener('click', () => {
+        state.searchQuery = '';
+        if (searchInput) searchInput.value = '';
+        clearSearchBtn.style.display = 'none';
+        renderPosterTables();
+      });
+    }
+
+    document.querySelectorAll('[data-highlight]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.highlightMode = btn.dataset.highlight || 'all';
+        document.querySelectorAll('[data-highlight]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderPosterTables();
+      });
+    });
+
+    // Grid Snap & Zoom Controls
+    const chkSnap = document.getElementById('chk-grid-snap');
+    if (chkSnap) {
+      chkSnap.addEventListener('change', e => {
+        state.gridSnap = e.target.checked;
+      });
+    }
+
+    const btnZoomIn = document.getElementById('btn-zoom-in');
+    const btnZoomOut = document.getElementById('btn-zoom-out');
+    const btnZoomFit = document.getElementById('btn-zoom-fit');
+    if (btnZoomIn) btnZoomIn.addEventListener('click', () => setZoom(state.zoomLevel + 0.1));
+    if (btnZoomOut) btnZoomOut.addEventListener('click', () => setZoom(state.zoomLevel - 0.1));
+    if (btnZoomFit) {
+      btnZoomFit.addEventListener('click', () => {
+        const wrapper = document.getElementById('hall-scroll-wrapper');
+        if (wrapper) {
+          const ratio = Math.min(1.0, Math.max(0.55, (wrapper.clientWidth - 36) / 920));
+          setZoom(ratio);
+        }
+      });
+    }
+
+    // Inspector Tabs
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        switchInspectorTab(btn.dataset.tab);
+      });
+    });
+
+    // Table Number & Alias Live Edit
+    const inputTableNum = document.getElementById('input-table-number');
+    const inputTableAlias = document.getElementById('input-table-alias');
+    if (inputTableNum) {
+      inputTableNum.addEventListener('input', e => {
+        const table = getSelectedTable();
+        if (!table) return;
+        table.tableNumber = e.target.value.trim() || table.tableNumber;
+        saveToLocalStorage(true);
+        renderAll();
+      });
+    }
+    if (inputTableAlias) {
+      inputTableAlias.addEventListener('input', e => {
+        const table = getSelectedTable();
+        if (!table) return;
+        table.alias = e.target.value;
+        saveToLocalStorage(true);
+        renderAll();
+      });
+    }
+
+    // Cinema Wheel Seat Click & Swap Logic
+    const wheelSeatsContainer = document.getElementById('cinema-wheel-seats');
+    if (wheelSeatsContainer) {
+      wheelSeatsContainer.addEventListener('click', e => {
+        const slot = e.target.closest('[data-wheel-seat]');
+        if (!slot) return;
+        const targetIdx = parseInt(slot.dataset.wheelSeat, 10);
+        handleSeatSelectionOrSwap(targetIdx);
+      });
+    }
+
+    // Compact Seat Row Click
+    const compactList = document.getElementById('seat-list-compact');
+    if (compactList) {
+      compactList.addEventListener('click', e => {
+        const row = e.target.closest('[data-row-seat]');
+        if (!row) return;
+        const targetIdx = parseInt(row.dataset.rowSeat, 10);
+        handleSeatSelectionOrSwap(targetIdx);
+      });
+    }
+
+    // Single Seat Editor Controls (人名、葷素、兒童座椅更換顯示、婚禮小物/驚喜)
+    const inputSeatName = document.getElementById('input-seat-guest-name');
+    if (inputSeatName) {
+      inputSeatName.addEventListener('input', e => {
+        const seat = getSelectedSeatObject();
+        if (!seat) return;
+        seat.name = e.target.value;
+        saveToLocalStorage(true);
+        renderAll();
+      });
+    }
+
+    const btnDietMeat = document.getElementById('btn-seat-diet-meat');
+    const btnDietVeg = document.getElementById('btn-seat-diet-veg');
+    if (btnDietMeat) {
+      btnDietMeat.addEventListener('click', () => {
+        const seat = getSelectedSeatObject();
+        if (!seat) return;
+        seat.diet = 'meat';
+        saveToLocalStorage(true);
+        renderAll();
+      });
+    }
+    if (btnDietVeg) {
+      btnDietVeg.addEventListener('click', () => {
+        const seat = getSelectedSeatObject();
+        if (!seat) return;
+        seat.diet = 'veg';
+        saveToLocalStorage(true);
+        renderAll();
+      });
+    }
+
+    const btnChildToggle = document.getElementById('btn-seat-child-toggle');
+    if (btnChildToggle) {
+      btnChildToggle.addEventListener('click', () => {
+        const seat = getSelectedSeatObject();
+        if (!seat) return;
+        seat.isChildSeat = !seat.isChildSeat;
+        saveToLocalStorage(true);
+        renderAll();
+        showToast(seat.isChildSeat ? '👶 已將此座位更換為「兒童座椅」顯示！' : '🪑 已恢復為一般成人座位顯示。');
+      });
+    }
+
+    const btnGiftToggle = document.getElementById('btn-seat-gift-toggle');
+    const inputGiftNote = document.getElementById('input-seat-gift-note');
+    if (btnGiftToggle) {
+      btnGiftToggle.addEventListener('click', () => {
+        const seat = getSelectedSeatObject();
+        if (!seat) return;
+        seat.hasGift = !seat.hasGift;
+        saveToLocalStorage(true);
+        renderAll();
+      });
+    }
+    if (inputGiftNote) {
+      inputGiftNote.addEventListener('input', e => {
+        const seat = getSelectedSeatObject();
+        if (!seat) return;
+        seat.giftNote = e.target.value;
+        if (seat.giftNote.trim()) {
+          seat.hasGift = true;
+        }
+        saveToLocalStorage(true);
+        renderAll();
+      });
+    }
+
+    const btnSwapSeat = document.getElementById('btn-swap-seat-mode');
+    if (btnSwapSeat) {
+      btnSwapSeat.addEventListener('click', () => {
+        if (state.swapSourceSeatIndex === state.selectedSeatIndex) {
+          state.swapSourceSeatIndex = null;
+        } else {
+          state.swapSourceSeatIndex = state.selectedSeatIndex;
+          showToast(`⇄ 請點選本桌另一個座位，即可與座位 #${state.selectedSeatIndex} 對調位置！`);
+        }
+        renderInspector();
+      });
+    }
+
+    const btnClearSeat = document.getElementById('btn-clear-single-seat');
+    if (btnClearSeat) {
+      btnClearSeat.addEventListener('click', () => {
+        const seat = getSelectedSeatObject();
+        if (!seat) return;
+        seat.name = '';
+        seat.diet = 'meat';
+        seat.isChildSeat = false;
+        seat.hasGift = false;
+        seat.giftNote = '';
+        saveToLocalStorage(true);
+        renderAll();
+      });
+    }
+
+    // Batch List Tab Actions
+    const btnApplyBatch = document.getElementById('btn-apply-batch-text');
+    if (btnApplyBatch) btnApplyBatch.addEventListener('click', applyBatchTextToTable);
+
+    const btnAllMeat = document.getElementById('btn-table-all-meat');
+    if (btnAllMeat) {
+      btnAllMeat.addEventListener('click', () => {
+        const table = getSelectedTable();
+        if (!table) return;
+        table.seats.forEach(s => { s.diet = 'meat'; });
+        saveToLocalStorage(true);
+        renderAll();
+        showToast(`🥩 已將 ${table.tableNumber} 桌全數設為葷食。`);
+      });
+    }
+
+    const btnAllVeg = document.getElementById('btn-table-all-veg');
+    if (btnAllVeg) {
+      btnAllVeg.addEventListener('click', () => {
+        const table = getSelectedTable();
+        if (!table) return;
+        table.seats.forEach(s => { s.diet = 'veg'; });
+        saveToLocalStorage(true);
+        renderAll();
+        showToast(`🥗 已將 ${table.tableNumber} 桌全數設為素食。`);
+      });
+    }
+
+    const btnTableAddChild = document.getElementById('btn-table-add-child');
+    if (btnTableAddChild) {
+      btnTableAddChild.addEventListener('click', () => {
+        const table = getSelectedTable();
+        if (!table) return;
+        const target = [...table.seats].reverse().find(s => !s.isChildSeat);
+        if (target) {
+          target.isChildSeat = true;
+          if (!target.name) target.name = '兒童座椅';
+          saveToLocalStorage(true);
+          renderAll();
+          showToast(`👶 已於 ${table.tableNumber} 桌座位 #${target.seatIndex} 設置兒童座椅！`);
+        }
+      });
+    }
+
+    const btnTableAllGift = document.getElementById('btn-table-all-gift');
+    if (btnTableAllGift) {
+      btnTableAllGift.addEventListener('click', () => {
+        const table = getSelectedTable();
+        if (!table) return;
+        table.seats.forEach(s => {
+          if (s.name || s.isChildSeat) s.hasGift = true;
+        });
+        saveToLocalStorage(true);
+        renderAll();
+        showToast(`🎁 已為 ${table.tableNumber} 桌所有在座賓客標記婚禮小物！`);
+      });
+    }
+
+    const btnTableClearAll = document.getElementById('btn-table-clear-all');
+    if (btnTableClearAll) {
+      btnTableClearAll.addEventListener('click', () => {
+        const table = getSelectedTable();
+        if (!table) return;
+        table.seats = createEmptySeats(SEATS_PER_TABLE);
+        saveToLocalStorage(true);
+        renderAll();
+        showToast(`🗑️ 已清空 ${table.tableNumber} 桌的所有座位資料。`);
+      });
+    }
+
+    // RSVP Import Tab Actions
+    const btnFetchRsvp = document.getElementById('btn-fetch-rsvp');
+    if (btnFetchRsvp) btnFetchRsvp.addEventListener('click', () => fetchCloudRsvpList(false));
+
+    const rsvpListEl = document.getElementById('rsvp-card-list');
+    if (rsvpListEl) {
+      rsvpListEl.addEventListener('click', e => {
+        const btn = e.target.closest('[data-rsvp-idx]');
+        if (!btn) return;
+        const idx = parseInt(btn.dataset.rsvpIdx, 10);
+        importRsvpGuestToCurrentTable(idx);
+      });
+    }
+  }
+
+  function getSelectedSeatObject() {
+    const table = getSelectedTable();
+    if (!table) return null;
+    return table.seats.find(s => s.seatIndex === state.selectedSeatIndex) || table.seats[0];
+  }
+
+  function handleSeatSelectionOrSwap(targetSeatIndex) {
+    const table = getSelectedTable();
+    if (!table) return;
+
+    if (state.swapSourceSeatIndex && state.swapSourceSeatIndex !== targetSeatIndex) {
+      const s1 = table.seats.find(s => s.seatIndex === state.swapSourceSeatIndex);
+      const s2 = table.seats.find(s => s.seatIndex === targetSeatIndex);
+      if (s1 && s2) {
+        const temp = {
+          name: s1.name,
+          diet: s1.diet,
+          isChildSeat: s1.isChildSeat,
+          hasGift: s1.hasGift,
+          giftNote: s1.giftNote
+        };
+        s1.name = s2.name;
+        s1.diet = s2.diet;
+        s1.isChildSeat = s2.isChildSeat;
+        s1.hasGift = s2.hasGift;
+        s1.giftNote = s2.giftNote;
+
+        s2.name = temp.name;
+        s2.diet = temp.diet;
+        s2.isChildSeat = temp.isChildSeat;
+        s2.hasGift = temp.hasGift;
+        s2.giftNote = temp.giftNote;
+
+        showToast(`⇄ 已將座位 #${s1.seatIndex} 與 座位 #${s2.seatIndex} 位置對調！`);
+      }
+      state.swapSourceSeatIndex = null;
+      state.selectedSeatIndex = targetSeatIndex;
+      saveToLocalStorage(true);
+      renderAll();
+      return;
+    }
+
+    state.swapSourceSeatIndex = null;
+    state.selectedSeatIndex = targetSeatIndex;
+    renderInspector();
+  }
+
+  function switchInspectorTab(tabId) {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      const isMatch = btn.dataset.tab === tabId;
+      btn.classList.toggle('active', isMatch);
+      btn.setAttribute('aria-selected', isMatch ? 'true' : 'false');
+    });
+
+    const pSeatMap = document.getElementById('tab-panel-seat-map');
+    const pBatch = document.getElementById('tab-panel-batch-list');
+    const pRsvp = document.getElementById('tab-panel-rsvp-import');
+
+    if (pSeatMap) pSeatMap.classList.toggle('hidden', tabId !== 'seat-map');
+    if (pBatch) pBatch.classList.toggle('hidden', tabId !== 'batch-list');
+    if (pRsvp) pRsvp.classList.toggle('hidden', tabId !== 'rsvp-import');
+
+    const table = getSelectedTable();
+    if (table && tabId === 'batch-list') {
+      syncBatchTextarea(table);
+    }
+  }
+
+  function setZoom(level) {
+    state.zoomLevel = Math.max(0.55, Math.min(1.35, Number(level.toFixed(2))));
+    const poster = document.getElementById('banquet-poster');
+    const label = document.getElementById('label-zoom-level');
+    if (poster) {
+      poster.style.transform = `scale(${state.zoomLevel})`;
+      poster.style.marginBottom = `${(state.zoomLevel - 1) * 1520}px`;
+    }
+    if (label) {
+      label.textContent = `${Math.round(state.zoomLevel * 100)}%`;
+    }
+  }
+
+  // ==================== Utilities ====================
+  function showToast(message) {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const el = document.createElement('div');
+    el.className = 'toast-msg';
+    el.textContent = message;
+    container.appendChild(el);
+    setTimeout(() => {
+      el.remove();
+    }, 3200);
+  }
+
+  function escapeHtml(str) {
+    return String(str ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  // Expose minimal API on window for automated Playwright verification & debugging
+  window.WeddingSeatingApp = {
+    getState: () => state,
+    setOrangeZoneTableCount,
+    addTable,
+    resetToDefaultLayout,
+    exportToExcel,
+    reconstructTablesFromSheetRows
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+
+</script>
+</body>
+</html>

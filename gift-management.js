@@ -1,5 +1,5 @@
 // ==================== Configuration ====================
-const API_URL = 'https://script.google.com/macros/s/AKfycbzygeElwgGgU1z_cqL2C5WDJ72Jtlvua1lUMg_52i6spDi3xxDXOzkqI2IXNQQPgDFLNw/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxK7R2lWFy16dodZ3DOLEiCGqwhzUWvlEK1f_oSNQq0IxOAo1aAle919AiGm-u2io4qJQ/exec';
 
 // ==================== Text Content ====================
 const text = {
@@ -19,6 +19,7 @@ const text = {
 
 // ==================== State ====================
 let guestData = [];
+let rsvpData = [];
 let currentRenderedList = [];
 let currentGuest = null;
 let filterMode = localStorage.getItem('gift_filter_mode') || 'all'; // 'all' | 'groom' | 'bride'
@@ -56,10 +57,27 @@ async function loadGuestData(showLoading = false) {
   }
 
   try {
-    const response = await fetch(API_URL + '?action=gift');
-    const result = await response.json();
+    const [giftRes, rsvpRes] = await Promise.all([
+      fetch(API_URL + '?action=gift'),
+      fetch(API_URL + '?action=rsvp').catch(() => null)
+    ]);
+    const result = await giftRes.json();
+
+    if (rsvpRes) {
+      try {
+        const rsvpResult = await rsvpRes.json();
+        if (rsvpResult.status === 'success' && rsvpResult.data && Array.isArray(rsvpResult.data.rsvp)) {
+          rsvpData = rsvpResult.data.rsvp;
+        }
+      } catch (rsvpErr) {
+        console.warn('RSVP load warning:', rsvpErr);
+      }
+    }
 
     if (result.status === 'success' && result.data && Array.isArray(result.data.gift)) {
+      if (Array.isArray(result.data.rsvp) && result.data.rsvp.length > 0) {
+        rsvpData = result.data.rsvp;
+      }
       guestData = result.data.gift;
       renderCurrentList();
     } else {
@@ -96,11 +114,89 @@ function getFilteredAndSearchedData() {
       const name = String(guest['姓名'] || '').toLowerCase();
       const side = String(guest['陣營'] || '').toLowerCase();
       const note = String(guest['備註/合包明細'] || '').toLowerCase();
-      return name.includes(kw) || side.includes(kw) || note.includes(kw);
+      const dietLabel = getGuestDietInfo(guest).label.toLowerCase();
+      const noGiftLabel = isNoGift(guest) ? '不收取禮金' : '';
+      return name.includes(kw) || side.includes(kw) || note.includes(kw) || dietLabel.includes(kw) || noGiftLabel.includes(kw);
     });
   }
 
   return list;
+}
+
+// 判斷賓客是否標記為「不收取禮金」
+function isNoGift(guest) {
+  if (!guest) return false;
+  const raw = guest['不收取禮金'] ?? guest['不收禮金'] ?? '';
+  if (raw === true || raw === 1) return true;
+  const str = String(raw).trim().toLowerCase();
+  return ['是', 'true', '1', 'v', '✓', 'y', 'yes', '不收', '不收取', '不收禮金', '不收取禮金'].includes(str);
+}
+
+// 同步編輯畫面上名字後方的「不收取禮金」註記標籤
+function syncNoGiftBadges(checked) {
+  const labelBadge = document.getElementById('edit-label-nogift-badge');
+  const nameBadge = document.getElementById('edit-name-nogift-badge');
+  if (labelBadge) labelBadge.classList.toggle('hidden', !checked);
+  if (nameBadge) nameBadge.classList.toggle('hidden', !checked);
+}
+
+// 判斷報名之葷素選擇字串是否包含素食
+function hasVegetarianDiet(dietRaw) {
+  if (!dietRaw) return false;
+  const str = String(dietRaw).trim();
+  if (!str) return false;
+
+  // 若有「素:數量」或「素食數量」格式（例如 "葷:2,素:0"、"葷:1,素:1"、"葷食3, 素食1"）
+  const vegCountMatches = [...str.matchAll(/素食?\s*[:：]?\s*(\d+)/g)];
+  if (vegCountMatches.length > 0) {
+    return vegCountMatches.some(m => parseInt(m[1], 10) > 0);
+  }
+
+  // 單人或純文字格式（例如 "素食"、"🥗 素食"、"全素"）
+  return str.includes('素') || str.includes('ベジ') || str.toLowerCase().includes('veg');
+}
+
+// 根據賓客姓名與陣營從報名清單 (rsvpData) 取得葷素標記（有素食標記「素食」，無素食標記「葷食」）
+function getGuestDietInfo(guest) {
+  const name = String(guest['姓名'] || '').trim();
+  const side = String(guest['陣營'] || '').trim();
+
+  let matchedRsvp = [];
+  if (name && Array.isArray(rsvpData) && rsvpData.length > 0) {
+    // 1. 優先比對「姓名 + 完整陣營」
+    matchedRsvp = rsvpData.filter(r =>
+      String(r['姓名'] || '').trim() === name &&
+      String(r['陣營'] || '').trim() === side
+    );
+
+    // 2. 若無，比對「姓名 + 男/女方關鍵字」
+    if (matchedRsvp.length === 0 && side) {
+      const isGroom = side.includes('男方');
+      const isBride = side.includes('女方');
+      matchedRsvp = rsvpData.filter(r => {
+        if (String(r['姓名'] || '').trim() !== name) return false;
+        const rSide = String(r['陣營'] || '');
+        return (isGroom && rSide.includes('男方')) || (isBride && rSide.includes('女方'));
+      });
+    }
+
+    // 3. 若仍無，直接比對「姓名」
+    if (matchedRsvp.length === 0) {
+      matchedRsvp = rsvpData.filter(r => String(r['姓名'] || '').trim() === name);
+    }
+  }
+
+  const latestRsvp = matchedRsvp.length > 0 ? matchedRsvp[matchedRsvp.length - 1] : null;
+  const dietRaw = latestRsvp
+    ? (latestRsvp['葷素選擇'] ?? latestRsvp['葷素'] ?? latestRsvp['飲食'] ?? '')
+    : (guest['葷素選擇'] ?? guest['葷素'] ?? guest['飲食'] ?? '');
+
+  const isVeg = hasVegetarianDiet(dietRaw);
+  return {
+    isVeg,
+    label: isVeg ? '素食' : '葷食',
+    raw: String(dietRaw || '').trim()
+  };
 }
 
 // 更新頂部儀表板統計數字
@@ -115,18 +211,18 @@ function updateStats() {
 
   guestData.forEach(g => {
     const amt = Number(g['金額']) || 0;
-    const isPaid = amt > 0;
+    const isCheckedIn = Boolean(String(g['更新時間'] || '').trim());
     totalAmount += amt;
-    if (isPaid) totalPaid++;
+    if (isCheckedIn) totalPaid++;
 
     const side = String(g['陣營'] || '');
     if (side.includes('男方')) {
       groomTotal++;
-      if (isPaid) groomPaid++;
+      if (isCheckedIn) groomPaid++;
     }
     if (side.includes('女方')) {
       brideTotal++;
-      if (isPaid) bridePaid++;
+      if (isCheckedIn) bridePaid++;
     }
   });
 
@@ -160,7 +256,10 @@ function renderCurrentList() {
   listEl.innerHTML = currentRenderedList.map((guest, index) => {
     const amount = Number(guest['金額']) || 0;
     const isPaid = amount > 0;
-    const paidClass = isPaid ? 'paid' : '';
+    const amountPaidClass = isPaid ? 'paid' : '';
+    const updateTime = String(guest['更新時間'] || '').trim();
+    const isCheckedIn = Boolean(updateTime);
+    const namePaidClass = isCheckedIn ? 'paid' : '';
     const name = String(guest['姓名'] || '').trim();
     const side = String(guest['陣營'] || '').trim();
     const isGroom = side.includes('男方');
@@ -170,8 +269,10 @@ function renderCurrentList() {
 
     const cakes = Number(guest['喜餅數量']) || 0;
     const note = String(guest['備註/合包明細'] || '').trim();
-    const updateTime = guest['更新時間'] || '';
     const formattedTime = updateTime ? formatTaiwanDateTime(updateTime) : '';
+    const dietInfo = getGuestDietInfo(guest);
+    const dietBadgeType = dietInfo.isVeg ? 'veg' : 'meat';
+    const noGift = isNoGift(guest);
 
     return `
       <div class="guest-item" data-index="${index}">
@@ -179,8 +280,10 @@ function renderCurrentList() {
           <div class="guest-avatar ${avatarType}">${escapeHtml(initial)}</div>
           <div class="guest-details">
             <div class="guest-name-row">
-              <span class="guest-name ${paidClass}">${escapeHtml(name)}</span>
+              <span class="guest-name ${namePaidClass}">${escapeHtml(name)}</span>
+              ${noGift ? '<span class="guest-nogift-badge">🚫 不收取禮金</span>' : ''}
               <span class="guest-side-badge ${sideBadgeType}">${escapeHtml(side || '親友')}</span>
+              <span class="guest-diet-badge ${dietBadgeType}"${dietInfo.raw ? ` title="報名選擇：${escapeHtml(dietInfo.raw)}"` : ''}>${dietInfo.label}</span>
             </div>
             <div class="guest-meta-row">
               ${cakes > 0 ? `<span class="guest-tag cake">🎁 喜餅 ${cakes} 盒</span>` : ''}
@@ -190,7 +293,7 @@ function renderCurrentList() {
           </div>
         </div>
         <div class="guest-amount-wrap">
-          <div class="guest-amount-val ${paidClass}">$${amount.toLocaleString()}</div>
+          <div class="guest-amount-val ${amountPaidClass}">$${amount.toLocaleString()}</div>
         </div>
       </div>
     `;
@@ -285,6 +388,12 @@ function openEditView(guest) {
   nameInput.value = guest['姓名'] || '';
   nameInput.readOnly = true;
 
+  // 不收取禮金註記（顯示在名字後方，不鎖定填寫功能）
+  const noGift = isNoGift(guest);
+  const noGiftCheckbox = document.getElementById('edit-nogift');
+  if (noGiftCheckbox) noGiftCheckbox.checked = noGift;
+  syncNoGiftBadges(noGift);
+
   // 陣營 (唯讀)
   const sideInput = document.getElementById('edit-side');
   const sideSelect = document.getElementById('edit-side-select');
@@ -314,6 +423,11 @@ function openAddView() {
   const nameInput = document.getElementById('edit-name');
   nameInput.value = '';
   nameInput.readOnly = false;
+
+  // 不收取禮金預設未勾選
+  const noGiftCheckbox = document.getElementById('edit-nogift');
+  if (noGiftCheckbox) noGiftCheckbox.checked = false;
+  syncNoGiftBadges(false);
 
   // 陣營 (下拉選單)
   const sideInput = document.getElementById('edit-side');
@@ -414,6 +528,8 @@ async function handleSave(e) {
   const amountStr = document.getElementById('edit-amount').value;
   const cakes = Number(document.getElementById('edit-cakes').value) || 0;
   const note = document.getElementById('edit-note').value.trim();
+  const noGift = Boolean(document.getElementById('edit-nogift')?.checked);
+  const noGiftVal = noGift ? '是' : '';
 
   // 驗證
   if (!name) {
@@ -448,7 +564,8 @@ async function handleSave(e) {
         '金額': amount,
         '喜餅數量': cakes,
         '備註/合包明細': note,
-        '更新時間': nowFormatted
+        '更新時間': nowFormatted,
+        '不收取禮金': noGiftVal
       };
     }
   } else {
@@ -459,7 +576,8 @@ async function handleSave(e) {
       '金額': amount,
       '喜餅數量': cakes,
       '備註/合包明細': note,
-      '更新時間': nowFormatted
+      '更新時間': nowFormatted,
+      '不收取禮金': noGiftVal
     };
     // 檢查是否已有相同姓名陣營
     const existIdx = guestData.findIndex(g => 
@@ -485,7 +603,8 @@ async function handleSave(e) {
       side: side,
       amount: amount,
       cakes: cakes,
-      note: note
+      note: note,
+      noGift: noGift
     };
 
     await fetch(API_URL, {
@@ -550,6 +669,11 @@ function attachEventListeners() {
 
   // Toggle stats dashboard
   document.getElementById('toggle-stats-btn')?.addEventListener('click', toggleStatsDashboard);
+
+  // Toggle no-gift badge in edit view
+  document.getElementById('edit-nogift')?.addEventListener('change', (e) => {
+    syncNoGiftBadges(e.target.checked);
+  });
 
   // Filter tabs
   document.querySelectorAll('.filter-btn[data-filter]').forEach(btn => {

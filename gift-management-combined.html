@@ -102,6 +102,21 @@
         background: rgba(16, 185, 129, 0.18);
         border-color: rgba(16, 185, 129, 0.4);
       }
+      :root:not([data-theme="light"]) .guest-diet-badge.veg {
+        background: rgba(16, 185, 129, 0.18);
+        color: #34d399;
+        border-color: rgba(16, 185, 129, 0.35);
+      }
+      :root:not([data-theme="light"]) .guest-diet-badge.meat {
+        background: rgba(245, 158, 11, 0.18);
+        color: #fbbf24;
+        border-color: rgba(245, 158, 11, 0.35);
+      }
+      :root:not([data-theme="light"]) .guest-nogift-badge {
+        background: rgba(168, 85, 247, 0.22);
+        color: #d8b4fe;
+        border-color: rgba(168, 85, 247, 0.45);
+      }
     }
 
     * {
@@ -555,6 +570,99 @@
     .guest-side-badge.bride {
       background: var(--side-bride-bg);
       color: var(--side-bride);
+    }
+
+    .guest-diet-badge {
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 1px 7px;
+      border-radius: var(--radius-full);
+      display: inline-block;
+    }
+
+    .guest-diet-badge.veg {
+      background: rgba(16, 185, 129, 0.12);
+      color: #059669;
+      border: 1px solid rgba(16, 185, 129, 0.28);
+    }
+
+    .guest-diet-badge.meat {
+      background: rgba(245, 158, 11, 0.12);
+      color: #d97706;
+      border: 1px solid rgba(245, 158, 11, 0.28);
+    }
+
+    .guest-nogift-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 1px 8px;
+      border-radius: var(--radius-full);
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      background: rgba(147, 51, 234, 0.12);
+      color: #7e22ce;
+      border: 1px solid rgba(147, 51, 234, 0.3);
+      white-space: nowrap;
+    }
+
+    .label-with-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .label-with-badge label {
+      margin-bottom: 0 !important;
+    }
+
+    .name-input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .name-input-wrap input {
+      padding-right: 110px !important;
+    }
+
+    .name-input-wrap .guest-nogift-badge {
+      position: absolute;
+      right: 10px;
+      pointer-events: none;
+    }
+
+    .nogift-toggle-row {
+      display: inline-flex !important;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+      margin-bottom: 0 !important;
+      font-size: 0.86rem !important;
+      font-weight: 600;
+      color: var(--text-sub);
+      cursor: pointer;
+      user-select: none;
+      padding: 6px 10px;
+      border-radius: var(--radius-sm);
+      background: rgba(147, 51, 234, 0.06);
+      border: 1px dashed rgba(147, 51, 234, 0.28);
+      transition: all 0.2s ease;
+    }
+
+    .nogift-toggle-row:hover {
+      border-color: #9333ea;
+      background: rgba(147, 51, 234, 0.1);
+    }
+
+    .nogift-toggle-row input[type="checkbox"] {
+      width: 17px !important;
+      height: 17px !important;
+      padding: 0 !important;
+      margin: 0;
+      accent-color: #9333ea;
+      cursor: pointer;
     }
 
     .guest-meta-row {
@@ -1088,8 +1196,18 @@
 
         <form id="edit-form">
           <div class="form-group">
-            <label for="edit-name">賓客姓名</label>
-            <input type="text" id="edit-name" placeholder="請輸入姓名" required autocomplete="off">
+            <div class="label-with-badge">
+              <label for="edit-name">賓客姓名</label>
+              <span id="edit-label-nogift-badge" class="guest-nogift-badge hidden">🚫 不收取禮金</span>
+            </div>
+            <div class="name-input-wrap">
+              <input type="text" id="edit-name" placeholder="請輸入姓名" required autocomplete="off">
+              <span id="edit-name-nogift-badge" class="guest-nogift-badge hidden">🚫 不收取禮金</span>
+            </div>
+            <label class="nogift-toggle-row" for="edit-nogift">
+              <input type="checkbox" id="edit-nogift">
+              <span>標記為「不收取禮金」（僅註記顯示，不鎖定填寫功能）</span>
+            </label>
           </div>
 
           <div class="form-group">
@@ -1108,6 +1226,9 @@
             
             <!-- Quick Preset Amount Buttons -->
             <div class="quick-amounts">
+              <button type="button" class="btn-quick-amount" data-add="100">+100</button>
+              <button type="button" class="btn-quick-amount" data-add="500">+500</button>
+              <button type="button" class="btn-quick-amount" data-add="800">+800</button>
               <button type="button" class="btn-quick-amount" data-add="1000">+1,000</button>
               <button type="button" class="btn-quick-amount" data-add="2000">+2,000</button>
               <button type="button" class="btn-quick-amount" data-set="3600">3,600</button>
@@ -1144,7 +1265,7 @@
 
   <script>
     // ==================== Configuration ====================
-    const API_URL = 'https://script.google.com/macros/s/AKfycbwiLr_vDKvXLwAnsffXn3PyYSCsxr_d1fRUOtuSF0nZqjRmwLW2mFLb4HF7fv7nBysmAA/exec';
+    const API_URL = 'https://script.google.com/macros/s/AKfycbxK7R2lWFy16dodZ3DOLEiCGqwhzUWvlEK1f_oSNQq0IxOAo1aAle919AiGm-u2io4qJQ/exec';
 
     // ==================== Text Content ====================
     const text = {
@@ -1164,6 +1285,7 @@
 
     // ==================== State ====================
     let guestData = [];
+    let rsvpData = [];
     let currentRenderedList = [];
     let currentGuest = null;
     let filterMode = localStorage.getItem('gift_filter_mode') || 'all'; // 'all' | 'groom' | 'bride'
@@ -1201,10 +1323,27 @@
       }
 
       try {
-        const response = await fetch(API_URL + '?action=gift');
-        const result = await response.json();
+        const [giftRes, rsvpRes] = await Promise.all([
+          fetch(API_URL + '?action=gift'),
+          fetch(API_URL + '?action=rsvp').catch(() => null)
+        ]);
+        const result = await giftRes.json();
+
+        if (rsvpRes) {
+          try {
+            const rsvpResult = await rsvpRes.json();
+            if (rsvpResult.status === 'success' && rsvpResult.data && Array.isArray(rsvpResult.data.rsvp)) {
+              rsvpData = rsvpResult.data.rsvp;
+            }
+          } catch (rsvpErr) {
+            console.warn('RSVP load warning:', rsvpErr);
+          }
+        }
 
         if (result.status === 'success' && result.data && Array.isArray(result.data.gift)) {
+          if (Array.isArray(result.data.rsvp) && result.data.rsvp.length > 0) {
+            rsvpData = result.data.rsvp;
+          }
           guestData = result.data.gift;
           renderCurrentList();
         } else {
@@ -1241,11 +1380,89 @@
           const name = String(guest['姓名'] || '').toLowerCase();
           const side = String(guest['陣營'] || '').toLowerCase();
           const note = String(guest['備註/合包明細'] || '').toLowerCase();
-          return name.includes(kw) || side.includes(kw) || note.includes(kw);
+          const dietLabel = getGuestDietInfo(guest).label.toLowerCase();
+          const noGiftLabel = isNoGift(guest) ? '不收取禮金' : '';
+          return name.includes(kw) || side.includes(kw) || note.includes(kw) || dietLabel.includes(kw) || noGiftLabel.includes(kw);
         });
       }
 
       return list;
+    }
+
+    // 判斷賓客是否標記為「不收取禮金」
+    function isNoGift(guest) {
+      if (!guest) return false;
+      const raw = guest['不收取禮金'] ?? guest['不收禮金'] ?? '';
+      if (raw === true || raw === 1) return true;
+      const str = String(raw).trim().toLowerCase();
+      return ['是', 'true', '1', 'v', '✓', 'y', 'yes', '不收', '不收取', '不收禮金', '不收取禮金'].includes(str);
+    }
+
+    // 同步編輯畫面上名字後方的「不收取禮金」註記標籤
+    function syncNoGiftBadges(checked) {
+      const labelBadge = document.getElementById('edit-label-nogift-badge');
+      const nameBadge = document.getElementById('edit-name-nogift-badge');
+      if (labelBadge) labelBadge.classList.toggle('hidden', !checked);
+      if (nameBadge) nameBadge.classList.toggle('hidden', !checked);
+    }
+
+    // 判斷報名之葷素選擇字串是否包含素食
+    function hasVegetarianDiet(dietRaw) {
+      if (!dietRaw) return false;
+      const str = String(dietRaw).trim();
+      if (!str) return false;
+
+      // 若有「素:數量」或「素食數量」格式（例如 "葷:2,素:0"、"葷:1,素:1"、"葷食3, 素食1"）
+      const vegCountMatches = [...str.matchAll(/素食?\s*[:：]?\s*(\d+)/g)];
+      if (vegCountMatches.length > 0) {
+        return vegCountMatches.some(m => parseInt(m[1], 10) > 0);
+      }
+
+      // 單人或純文字格式（例如 "素食"、"🥗 素食"、"全素"）
+      return str.includes('素') || str.includes('ベジ') || str.toLowerCase().includes('veg');
+    }
+
+    // 根據賓客姓名與陣營從報名清單 (rsvpData) 取得葷素標記（有素食標記「素食」，無素食標記「葷食」）
+    function getGuestDietInfo(guest) {
+      const name = String(guest['姓名'] || '').trim();
+      const side = String(guest['陣營'] || '').trim();
+
+      let matchedRsvp = [];
+      if (name && Array.isArray(rsvpData) && rsvpData.length > 0) {
+        // 1. 優先比對「姓名 + 完整陣營」
+        matchedRsvp = rsvpData.filter(r =>
+          String(r['姓名'] || '').trim() === name &&
+          String(r['陣營'] || '').trim() === side
+        );
+
+        // 2. 若無，比對「姓名 + 男/女方關鍵字」
+        if (matchedRsvp.length === 0 && side) {
+          const isGroom = side.includes('男方');
+          const isBride = side.includes('女方');
+          matchedRsvp = rsvpData.filter(r => {
+            if (String(r['姓名'] || '').trim() !== name) return false;
+            const rSide = String(r['陣營'] || '');
+            return (isGroom && rSide.includes('男方')) || (isBride && rSide.includes('女方'));
+          });
+        }
+
+        // 3. 若仍無，直接比對「姓名」
+        if (matchedRsvp.length === 0) {
+          matchedRsvp = rsvpData.filter(r => String(r['姓名'] || '').trim() === name);
+        }
+      }
+
+      const latestRsvp = matchedRsvp.length > 0 ? matchedRsvp[matchedRsvp.length - 1] : null;
+      const dietRaw = latestRsvp
+        ? (latestRsvp['葷素選擇'] ?? latestRsvp['葷素'] ?? latestRsvp['飲食'] ?? '')
+        : (guest['葷素選擇'] ?? guest['葷素'] ?? guest['飲食'] ?? '');
+
+      const isVeg = hasVegetarianDiet(dietRaw);
+      return {
+        isVeg,
+        label: isVeg ? '素食' : '葷食',
+        raw: String(dietRaw || '').trim()
+      };
     }
 
     // 更新頂部儀表板統計數字
@@ -1260,18 +1477,18 @@
 
       guestData.forEach(g => {
         const amt = Number(g['金額']) || 0;
-        const isPaid = amt > 0;
+        const isCheckedIn = Boolean(String(g['更新時間'] || '').trim());
         totalAmount += amt;
-        if (isPaid) totalPaid++;
+        if (isCheckedIn) totalPaid++;
 
         const side = String(g['陣營'] || '');
         if (side.includes('男方')) {
           groomTotal++;
-          if (isPaid) groomPaid++;
+          if (isCheckedIn) groomPaid++;
         }
         if (side.includes('女方')) {
           brideTotal++;
-          if (isPaid) bridePaid++;
+          if (isCheckedIn) bridePaid++;
         }
       });
 
@@ -1305,7 +1522,10 @@
       listEl.innerHTML = currentRenderedList.map((guest, index) => {
         const amount = Number(guest['金額']) || 0;
         const isPaid = amount > 0;
-        const paidClass = isPaid ? 'paid' : '';
+        const amountPaidClass = isPaid ? 'paid' : '';
+        const updateTime = String(guest['更新時間'] || '').trim();
+        const isCheckedIn = Boolean(updateTime);
+        const namePaidClass = isCheckedIn ? 'paid' : '';
         const name = String(guest['姓名'] || '').trim();
         const side = String(guest['陣營'] || '').trim();
         const isGroom = side.includes('男方');
@@ -1315,8 +1535,10 @@
 
         const cakes = Number(guest['喜餅數量']) || 0;
         const note = String(guest['備註/合包明細'] || '').trim();
-        const updateTime = guest['更新時間'] || '';
         const formattedTime = updateTime ? formatTaiwanDateTime(updateTime) : '';
+        const dietInfo = getGuestDietInfo(guest);
+        const dietBadgeType = dietInfo.isVeg ? 'veg' : 'meat';
+        const noGift = isNoGift(guest);
 
         return `
           <div class="guest-item" data-index="${index}">
@@ -1324,8 +1546,10 @@
               <div class="guest-avatar ${avatarType}">${escapeHtml(initial)}</div>
               <div class="guest-details">
                 <div class="guest-name-row">
-                  <span class="guest-name ${paidClass}">${escapeHtml(name)}</span>
+                  <span class="guest-name ${namePaidClass}">${escapeHtml(name)}</span>
+                  ${noGift ? '<span class="guest-nogift-badge">🚫 不收取禮金</span>' : ''}
                   <span class="guest-side-badge ${sideBadgeType}">${escapeHtml(side || '親友')}</span>
+                  <span class="guest-diet-badge ${dietBadgeType}"${dietInfo.raw ? ` title="報名選擇：${escapeHtml(dietInfo.raw)}"` : ''}>${dietInfo.label}</span>
                 </div>
                 <div class="guest-meta-row">
                   ${cakes > 0 ? `<span class="guest-tag cake">🎁 喜餅 ${cakes} 盒</span>` : ''}
@@ -1335,7 +1559,7 @@
               </div>
             </div>
             <div class="guest-amount-wrap">
-              <div class="guest-amount-val ${paidClass}">$${amount.toLocaleString()}</div>
+              <div class="guest-amount-val ${amountPaidClass}">$${amount.toLocaleString()}</div>
             </div>
           </div>
         `;
@@ -1430,6 +1654,12 @@
       nameInput.value = guest['姓名'] || '';
       nameInput.readOnly = true;
 
+      // 不收取禮金註記（顯示在名字後方，不鎖定填寫功能）
+      const noGift = isNoGift(guest);
+      const noGiftCheckbox = document.getElementById('edit-nogift');
+      if (noGiftCheckbox) noGiftCheckbox.checked = noGift;
+      syncNoGiftBadges(noGift);
+
       // 陣營 (唯讀)
       const sideInput = document.getElementById('edit-side');
       const sideSelect = document.getElementById('edit-side-select');
@@ -1459,6 +1689,11 @@
       const nameInput = document.getElementById('edit-name');
       nameInput.value = '';
       nameInput.readOnly = false;
+
+      // 不收取禮金預設未勾選
+      const noGiftCheckbox = document.getElementById('edit-nogift');
+      if (noGiftCheckbox) noGiftCheckbox.checked = false;
+      syncNoGiftBadges(false);
 
       // 陣營 (下拉選單)
       const sideInput = document.getElementById('edit-side');
@@ -1559,6 +1794,8 @@
       const amountStr = document.getElementById('edit-amount').value;
       const cakes = Number(document.getElementById('edit-cakes').value) || 0;
       const note = document.getElementById('edit-note').value.trim();
+      const noGift = Boolean(document.getElementById('edit-nogift')?.checked);
+      const noGiftVal = noGift ? '是' : '';
 
       // 驗證
       if (!name) {
@@ -1593,7 +1830,8 @@
             '金額': amount,
             '喜餅數量': cakes,
             '備註/合包明細': note,
-            '更新時間': nowFormatted
+            '更新時間': nowFormatted,
+            '不收取禮金': noGiftVal
           };
         }
       } else {
@@ -1604,7 +1842,8 @@
           '金額': amount,
           '喜餅數量': cakes,
           '備註/合包明細': note,
-          '更新時間': nowFormatted
+          '更新時間': nowFormatted,
+          '不收取禮金': noGiftVal
         };
         // 檢查是否已有相同姓名陣營
         const existIdx = guestData.findIndex(g => 
@@ -1630,7 +1869,8 @@
           side: side,
           amount: amount,
           cakes: cakes,
-          note: note
+          note: note,
+          noGift: noGift
         };
 
         await fetch(API_URL, {
@@ -1695,6 +1935,11 @@
 
       // Toggle stats dashboard
       document.getElementById('toggle-stats-btn')?.addEventListener('click', toggleStatsDashboard);
+
+      // Toggle no-gift badge in edit view
+      document.getElementById('edit-nogift')?.addEventListener('change', (e) => {
+        syncNoGiftBadges(e.target.checked);
+      });
 
       // Filter tabs
       document.querySelectorAll('.filter-btn[data-filter]').forEach(btn => {

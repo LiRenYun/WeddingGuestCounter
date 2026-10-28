@@ -8,7 +8,7 @@
   'use strict';
 
   // ==================== Configuration ====================
-  const API_URL = 'https://script.google.com/macros/s/AKfycbzEs0KfkyaB_6Z7gmYY-a2a_5XLMvrMioxQ0I2tCM9zwnt0NHl2Z9Z8gRgbZdD1i77L3g/exec';
+  const API_URL = 'https://script.google.com/macros/s/AKfycbxK7R2lWFy16dodZ3DOLEiCGqwhzUWvlEK1f_oSNQq0IxOAo1aAle919AiGm-u2io4qJQ/exec';
   const STORAGE_KEY = 'wedding_jinzhuan_seating_v1';
   const SEATS_PER_TABLE = 10;
 

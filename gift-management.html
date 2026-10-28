@@ -102,6 +102,21 @@
         background: rgba(16, 185, 129, 0.18);
         border-color: rgba(16, 185, 129, 0.4);
       }
+      :root:not([data-theme="light"]) .guest-diet-badge.veg {
+        background: rgba(16, 185, 129, 0.18);
+        color: #34d399;
+        border-color: rgba(16, 185, 129, 0.35);
+      }
+      :root:not([data-theme="light"]) .guest-diet-badge.meat {
+        background: rgba(245, 158, 11, 0.18);
+        color: #fbbf24;
+        border-color: rgba(245, 158, 11, 0.35);
+      }
+      :root:not([data-theme="light"]) .guest-nogift-badge {
+        background: rgba(168, 85, 247, 0.22);
+        color: #d8b4fe;
+        border-color: rgba(168, 85, 247, 0.45);
+      }
     }
 
     * {
@@ -555,6 +570,99 @@
     .guest-side-badge.bride {
       background: var(--side-bride-bg);
       color: var(--side-bride);
+    }
+
+    .guest-diet-badge {
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 1px 7px;
+      border-radius: var(--radius-full);
+      display: inline-block;
+    }
+
+    .guest-diet-badge.veg {
+      background: rgba(16, 185, 129, 0.12);
+      color: #059669;
+      border: 1px solid rgba(16, 185, 129, 0.28);
+    }
+
+    .guest-diet-badge.meat {
+      background: rgba(245, 158, 11, 0.12);
+      color: #d97706;
+      border: 1px solid rgba(245, 158, 11, 0.28);
+    }
+
+    .guest-nogift-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 1px 8px;
+      border-radius: var(--radius-full);
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      background: rgba(147, 51, 234, 0.12);
+      color: #7e22ce;
+      border: 1px solid rgba(147, 51, 234, 0.3);
+      white-space: nowrap;
+    }
+
+    .label-with-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .label-with-badge label {
+      margin-bottom: 0 !important;
+    }
+
+    .name-input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .name-input-wrap input {
+      padding-right: 110px !important;
+    }
+
+    .name-input-wrap .guest-nogift-badge {
+      position: absolute;
+      right: 10px;
+      pointer-events: none;
+    }
+
+    .nogift-toggle-row {
+      display: inline-flex !important;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+      margin-bottom: 0 !important;
+      font-size: 0.86rem !important;
+      font-weight: 600;
+      color: var(--text-sub);
+      cursor: pointer;
+      user-select: none;
+      padding: 6px 10px;
+      border-radius: var(--radius-sm);
+      background: rgba(147, 51, 234, 0.06);
+      border: 1px dashed rgba(147, 51, 234, 0.28);
+      transition: all 0.2s ease;
+    }
+
+    .nogift-toggle-row:hover {
+      border-color: #9333ea;
+      background: rgba(147, 51, 234, 0.1);
+    }
+
+    .nogift-toggle-row input[type="checkbox"] {
+      width: 17px !important;
+      height: 17px !important;
+      padding: 0 !important;
+      margin: 0;
+      accent-color: #9333ea;
+      cursor: pointer;
     }
 
     .guest-meta-row {
@@ -1088,8 +1196,18 @@
 
         <form id="edit-form">
           <div class="form-group">
-            <label for="edit-name">賓客姓名</label>
-            <input type="text" id="edit-name" placeholder="請輸入姓名" required autocomplete="off">
+            <div class="label-with-badge">
+              <label for="edit-name">賓客姓名</label>
+              <span id="edit-label-nogift-badge" class="guest-nogift-badge hidden">🚫 不收取禮金</span>
+            </div>
+            <div class="name-input-wrap">
+              <input type="text" id="edit-name" placeholder="請輸入姓名" required autocomplete="off">
+              <span id="edit-name-nogift-badge" class="guest-nogift-badge hidden">🚫 不收取禮金</span>
+            </div>
+            <label class="nogift-toggle-row" for="edit-nogift">
+              <input type="checkbox" id="edit-nogift">
+              <span>標記為「不收取禮金」（僅註記顯示，不鎖定填寫功能）</span>
+            </label>
           </div>
 
           <div class="form-group">
@@ -1108,6 +1226,9 @@
             
             <!-- Quick Preset Amount Buttons -->
             <div class="quick-amounts">
+              <button type="button" class="btn-quick-amount" data-add="100">+100</button>
+              <button type="button" class="btn-quick-amount" data-add="500">+500</button>
+              <button type="button" class="btn-quick-amount" data-add="800">+800</button>
               <button type="button" class="btn-quick-amount" data-add="1000">+1,000</button>
               <button type="button" class="btn-quick-amount" data-add="2000">+2,000</button>
               <button type="button" class="btn-quick-amount" data-set="3600">3,600</button>

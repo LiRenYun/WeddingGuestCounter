@@ -24,7 +24,7 @@ function doGet(e) {
       result = { checkin: getSheetDataAsJson(ss, "簽到紀錄") };
     } else if (action === 'gift') {
       // 僅撈取「禮金紀錄」
-      result = { gift: getSheetDataAsJson(ss, "禮金紀錄") };
+      result = { gift: getSheetDataAsJson(ss, "禮金紀錄"), rsvp: getSheetDataAsJson(ss, "報名清單") };
     } else if (action === 'seating') {
       // 僅撈取「桌次分配」
       result = { seating: getSheetDataAsJson(ss, "桌次分配") };
@@ -121,13 +121,13 @@ function doPost(e) {
       var formattedTime = formatCustomDateTime(timestamp);
 
       // 強制確保標題列正確（避免手動編輯造成欄位錯位）
-      var correctHeaders = ["姓名", "陣營", "金額", "喜餅數量", "備註/合包明細", "更新時間"];
+      var correctHeaders = ["姓名", "陣營", "金額", "喜餅數量", "備註/合包明細", "更新時間", "不收取禮金"];
       if (sheet.getLastRow() === 0) {
         sheet.appendRow(correctHeaders);
       } else {
         // 檢查並修正標題列
-        var maxCols = Math.max(sheet.getLastColumn(), 6);
-        var headers = sheet.getRange(1, 1, 1, 6).getValues()[0];
+        var maxCols = Math.max(sheet.getLastColumn(), 7);
+        var headers = sheet.getRange(1, 1, 1, 7).getValues()[0];
         var needsUpdate = false;
         for (var i = 0; i < correctHeaders.length; i++) {
           if (headers[i] !== correctHeaders[i]) {
@@ -136,16 +136,18 @@ function doPost(e) {
           }
         }
         if (needsUpdate) {
-          sheet.getRange(1, 1, 1, 6).setValues([correctHeaders]);
+          sheet.getRange(1, 1, 1, 7).setValues([correctHeaders]);
         }
       }
 
+      var noGiftVal = (data.noGift === true || data.noGift === '是' || data.noGift === '不收取禮金') ? "是" : "";
+
       // 判斷是否為更新操作
       if (data.action === 'update') {
-        // 依「姓名+陣營」更新金額、喜餅數量、備註與更新時間；找不到則新增
+        // 依「姓名+陣營」更新金額、喜餅數量、備註、更新時間與不收取禮金；找不到則新增
         var updated = updateGiftAmount(
           sheet, data.name, data.side, data.amount,
-          Number(data.cakes) || 0, data.note || "", formattedTime
+          Number(data.cakes) || 0, data.note || "", formattedTime, noGiftVal
         );
         if (!updated) {
           sheet.appendRow([
@@ -154,7 +156,8 @@ function doPost(e) {
             Number(data.amount) || 0,
             Number(data.cakes) || 0,
             data.note || "",
-            formattedTime
+            formattedTime,
+            noGiftVal
           ]);
         }
       } else {
@@ -168,7 +171,8 @@ function doPost(e) {
           Number(data.amount) || 0,
           Number(data.cakes) || 0,
           data.note || "",
-          formattedTime
+          formattedTime,
+          noGiftVal
         ]);
       }
 
@@ -432,7 +436,7 @@ function updateSeatingTable(sheet, name, tableNumber) {
  * @param {Date} timestamp - 更新時間
  * @return {boolean} 是否成功找到並更新
  */
-function updateGiftAmount(sheet, name, side, amount, cakes, note, timestamp) {
+function updateGiftAmount(sheet, name, side, amount, cakes, note, timestamp, noGiftVal) {
   var lastRow = sheet.getLastRow();
   if (lastRow <= 1) return false;
 
@@ -445,11 +449,14 @@ function updateGiftAmount(sheet, name, side, amount, cakes, note, timestamp) {
     var s = sides[i][0].toString().trim();
     if (n === name.toString().trim() && s === side.toString().trim()) {
       var rowIndex = i + 2;
-      // 第 3 欄 = 金額，第 4 欄 = 喜餅數量，第 5 欄 = 備註，第 6 欄 = 更新時間
+      // 第 3 欄 = 金額，第 4 欄 = 喜餅數量，第 5 欄 = 備註，第 6 欄 = 更新時間，第 7 欄 = 不收取禮金
       sheet.getRange(rowIndex, 3).setValue(Number(amount));
       sheet.getRange(rowIndex, 4).setValue(Number(cakes) || 0);
       sheet.getRange(rowIndex, 5).setValue(note || "");
       sheet.getRange(rowIndex, 6).setValue(timestamp);
+      if (noGiftVal !== undefined) {
+        sheet.getRange(rowIndex, 7).setValue(noGiftVal);
+      }
       return true;
     }
   }
@@ -469,7 +476,7 @@ function syncToGiftSheet(ss, name, side) {
   if (!name) return;
   var sheet = getOrCreateSheet(ss, "禮金紀錄");
   if (sheet.getLastRow() === 0) {
-    sheet.appendRow(["姓名", "陣營", "金額", "喜餅數量", "備註/合包明細", "更新時間"]);
+    sheet.appendRow(["姓名", "陣營", "金額", "喜餅數量", "備註/合包明細", "更新時間", "不收取禮金"]);
   }
 
   // 檢查是否已存在同名+同陣營的紀錄，避免重複新增
@@ -483,7 +490,7 @@ function syncToGiftSheet(ss, name, side) {
       }
     }
   }
-  sheet.appendRow([name, side, 0, 0, "", formatCustomDateTime(new Date())]);
+  sheet.appendRow([name, side, 0, 0, "", "", ""]);
 }
 
 /**

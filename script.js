@@ -764,7 +764,7 @@ if (wishMessage) {
 
 //const API_URL = "https://script.google.com/macros/s/AKfycbzKsZ90yBKYSlTADzaVt6PLin9tevzgnTaskNF06jNWr6G63vX8k_GEu64gx275eTrumA/exec"; //old version
 // const API_URL = "https://script.google.com/macros/s/AKfycbxn_S06Rv8Jqi5d3lb3D7hfhD-9SH8TqlgNnsJ0YL1RCitoqdOOZ7tCk_KNMGj-c9-G2A/exec"; //new
-const API_URL = "https://script.google.com/macros/s/AKfycbwIyadecSWnd5dtegzvhXz9Epsr4bWZ4tuS7h9bXUEMIBrAlLGBPe9ZwOHVBdn9nx7C0A/exec"; //new
+const API_URL = "https://script.google.com/macros/s/AKfycbxK7R2lWFy16dodZ3DOLEiCGqwhzUWvlEK1f_oSNQq0IxOAo1aAle919AiGm-u2io4qJQ/exec"; //new
 function handleFormSubmit(formId, formType, getPayload, validateFn) {
     const form = document.getElementById(formId);
     if (!form) return;

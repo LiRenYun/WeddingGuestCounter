@@ -10,7 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;800;900&family=Noto+Serif+TC:wght@700;900&display=swap" rel="stylesheet">
   <!-- SheetJS for .xlsx Export & Import -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <link rel="stylesheet" href="seating.css">
+  <link rel="stylesheet" href="seating.css?v=20261106">
 </head>
 <body>
   <a class="skip-link" href="#editor">跳到座位編輯</a>
@@ -79,7 +79,7 @@
         <p class="field-label">擴充區（橘框）目前 <span id="orange-zone-count">0</span> 桌</p>
         <div class="btn-row">
           <button type="button" id="btn-orange-clear" class="btn btn-sm btn-danger">清空擴充區</button>
-          <button type="button" id="btn-reset-default-layout" class="btn btn-sm btn-danger">重置為預設 15 桌</button>
+          <button type="button" id="btn-reset-default-layout" class="btn btn-sm btn-danger" title="清空所有座位並回到預設 15 桌（需二次確認）">全部重製（預設 15 桌）</button>
         </div>
       </details>
 
@@ -280,6 +280,6 @@
 
   <!-- Independent Script for Wedding Seating Arrangement ONLY -->
   <script src="sandbox-guard.js"></script>
-  <script src="seating.js"></script>
+  <script src="seating.js?v=20261106"></script>
 </body>
 </html>

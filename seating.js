@@ -465,15 +465,20 @@
     showToast(`已刪除桌次：${removedLabel}`, true);
   }
 
+  // 全部重製：二次確認後，桌次與主桌回到預設 15 桌＋主桌、所有座位清空（僅本機草稿，未儲存至雲端）
   function resetToDefaultLayout() {
-    remember('重置預設配置');
+    if (!window.confirm('確定要全部重製為預設 15 桌配置嗎？\n所有桌次、座位名單與標記都會清空（尚未儲存至雲端的內容也會消失）。')) return;
+    if (!window.confirm('再次確認：此動作無法直接還原，確定重製？（重製後仍可用「復原」按鈕還原一次）')) return;
+    remember('全部重製');
     state.tables = getDefaultTables();
     state.selectedTableId = state.tables[0].id;
     state.selectedSeatIndex = 1;
     state.swapSourceSeatIndex = null;
+    state.align.ids = [];
+    state.rsvpSel = -1;
     saveToLocalStorage(true);
     renderAll();
-    showToast('已重置為金饌廳預設 15 桌配置', true);
+    showToast('已全部重製為預設 15 桌配置', true);
   }
 
   // ==================== Undo (last destructive action) ====================

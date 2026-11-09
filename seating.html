@@ -10,7 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;800;900&family=Noto+Serif+TC:wght@700;900&display=swap" rel="stylesheet">
   <!-- SheetJS for .xlsx Export & Import -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <link rel="stylesheet" href="seating.css?v=20261109">
+  <link rel="stylesheet" href="seating.css?v=20261110">
 </head>
 <body>
   <a class="skip-link" href="#editor">跳到座位編輯</a>
@@ -230,6 +230,12 @@
             <button type="button" id="btn-table-all-gift" class="btn btn-sm">在座者全加小物</button>
             <button type="button" id="btn-table-clear-all" class="btn btn-sm btn-danger">清空本桌</button>
           </div>
+          <h3 class="subhead">與其他桌對調</h3>
+          <p class="hint">對調兩桌的座位名單與桌名；桌號、位置與區域不變。</p>
+          <div class="btn-row">
+            <select id="select-swap-table" class="input" aria-label="選擇要對調的桌次"></select>
+            <button type="button" id="btn-swap-table-content" class="btn btn-sm">對調名單與桌名</button>
+          </div>
         </div>
 
         <!-- Tab 3: import from RSVP list -->
@@ -283,6 +289,6 @@
 
   <!-- Independent Script for Wedding Seating Arrangement ONLY -->
   <script src="sandbox-guard.js"></script>
-  <script src="seating.js?v=20261109"></script>
+  <script src="seating.js?v=20261110"></script>
 </body>
 </html>

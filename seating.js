@@ -788,6 +788,7 @@
     renderSeatRows(table);
     renderSeatDetail();
     syncBatchTextarea(table);
+    renderSwapTableSelect();
     refreshTableNumberWarning();
   }
 
@@ -966,6 +967,39 @@
     saveToLocalStorage(true);
     renderAll();
     showToast(`已套用「${table.tableNumber} 桌」1～10 號座位名單`, true);
+  }
+
+  // 與其他桌對調：座位名單與桌名互換，桌號、座標與區域保持不變
+  function renderSwapTableSelect() {
+    const sel = document.getElementById('select-swap-table');
+    const current = getSelectedTable();
+    if (!sel || !current) return;
+    const others = sortTables(state.tables).filter(t => t.id !== current.id);
+    const html = others.map(t =>
+      `<option value="${escapeHtml(t.id)}">${escapeHtml(t.tableNumber)} 桌${t.alias ? '｜' + escapeHtml(t.alias) : ''}</option>`
+    ).join('');
+    if (sel.dataset.key !== html) {
+      sel.dataset.key = html;
+      sel.innerHTML = html;
+    }
+  }
+
+  function swapTableContentWithSelected() {
+    const table = getSelectedTable();
+    const sel = document.getElementById('select-swap-table');
+    const other = sel && state.tables.find(t => t.id === sel.value);
+    if (!table || !other || other.id === table.id) {
+      showToast('請先選擇要對調的另一桌。');
+      return;
+    }
+    remember(`與 ${other.tableNumber} 桌對調名單與桌名`);
+    [table.seats, other.seats] = [other.seats, table.seats];
+    [table.alias, other.alias] = [other.alias, table.alias];
+    delete state.batchDrafts[table.id];
+    delete state.batchDrafts[other.id];
+    saveToLocalStorage(true);
+    renderAll();
+    showToast(`已對調 ${table.tableNumber} 桌與 ${other.tableNumber} 桌的名單與桌名（桌號不變）`, true);
   }
 
   // ==================== RSVP Import to Current Table ====================
@@ -2094,6 +2128,7 @@
       renderAll();
       showToast(`已清空 ${table.tableNumber} 桌的所有座位`, true);
     });
+    on('btn-swap-table-content', 'click', swapTableContentWithSelected);
 
     // RSVP tab
     on('btn-fetch-rsvp', 'click', () => fetchCloudRsvpList(false));

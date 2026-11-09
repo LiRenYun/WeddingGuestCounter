@@ -10,7 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;800;900&family=Noto+Serif+TC:wght@700;900&display=swap" rel="stylesheet">
   <!-- SheetJS for .xlsx Export & Import -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <link rel="stylesheet" href="seating.css?v=20261106">
+  <link rel="stylesheet" href="seating.css?v=20261109">
 </head>
 <body>
   <a class="skip-link" href="#editor">跳到座位編輯</a>
@@ -185,6 +185,8 @@
           </div>
         </div>
 
+        <label class="check-row"><input type="checkbox" id="chk-table-number-guard" checked> 桌號防呆（重複桌號會還原；關閉後可自由重排，改完再存檔）</label>
+
         <div class="tabs" role="tablist" aria-label="編輯方式">
           <button type="button" class="tab-btn" role="tab" id="tab-seat-map" data-tab="seat-map" aria-controls="tab-panel-seat-map" aria-selected="true">逐座編輯</button>
           <button type="button" class="tab-btn" role="tab" id="tab-batch-list" data-tab="batch-list" aria-controls="tab-panel-batch-list" aria-selected="false" tabindex="-1">整桌名單</button>
@@ -218,6 +220,7 @@
             <label for="textarea-batch-seats">本桌 1～10 號座位名單</label>
             <textarea id="textarea-batch-seats" class="batch-textarea" aria-describedby="batch-help" placeholder="第1位姓名&#10;第2位姓名, 素&#10;第3位姓名, 兒童椅&#10;第4位姓名, 小物:手寫卡片"></textarea>
           </div>
+          <p class="hint" id="batch-draft-status" role="status" hidden></p>
           <button type="button" id="btn-apply-batch-text" class="btn btn-primary">套用名單至本桌</button>
           <h3 class="subhead">整桌快速設定</h3>
           <div class="btn-row">
@@ -280,6 +283,6 @@
 
   <!-- Independent Script for Wedding Seating Arrangement ONLY -->
   <script src="sandbox-guard.js"></script>
-  <script src="seating.js?v=20261106"></script>
+  <script src="seating.js?v=20261109"></script>
 </body>
 </html>

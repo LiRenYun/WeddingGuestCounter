@@ -87,6 +87,8 @@
     zoomLevel: 1.0,
     isDirty: false,
     lastSavedAt: null,
+    guardTableNumber: true,     // 桌號防呆：開啟時重複桌號會還原；關閉時允許暫時重複，方便重新排序
+    batchDrafts: {},            // 整桌名單未套用的草稿（僅記憶體，依桌次 id 保存，切換桌次不會遺失）
     rsvpList: [],               // 從雲端或範例載入之報名清單
     rsvpQuery: '',
     rsvpStatus: 'all',          // 'all' | 'free' | 'assigned'
@@ -135,6 +137,7 @@
         selectedTableId: state.selectedTableId,
         poster: state.poster,
         isDirty: state.isDirty,
+        guardTableNumber: state.guardTableNumber,
         lastSavedAt: new Date().toISOString()
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
@@ -154,6 +157,7 @@
         state.selectedTableId = parsed.selectedTableId || state.tables[0].id;
         state.lastSavedAt = parsed.lastSavedAt || null;
         state.isDirty = parsed.isDirty === true;
+        state.guardTableNumber = parsed.guardTableNumber !== false;
         if (parsed.poster) state.poster = { ...state.poster, ...parsed.poster };
       }
     } catch (err) {
@@ -212,6 +216,10 @@
 
   // ==================== Cloud Sync (Google Apps Script) ====================
   async function saveToCloud() {
+    const dups = duplicateTableNumbers();
+    if (dups.length && !window.confirm(`目前有重複桌號：${dups.join('、')}。\n依桌號比對的功能會無法分辨，確定仍要儲存至雲端？`)) return;
+    const pendingDrafts = Object.keys(state.batchDrafts).filter(id => state.tables.some(t => t.id === id)).length;
+    if (pendingDrafts && !window.confirm(`有 ${pendingDrafts} 桌的整桌名單尚未套用，這些內容不會被儲存。\n確定仍要儲存？`)) return;
     const saveBtn = document.getElementById('btn-save-cloud');
     if (saveBtn) saveBtn.disabled = true;
     updateSyncBadge('儲存至 Google 試算表中…', 'saving');
@@ -374,6 +382,28 @@
     el.hidden = !msg;
   }
 
+  // 防呆關閉時，若目前桌與其他桌重複，於欄位下方提示（不阻擋編輯）
+  function refreshTableNumberWarning() {
+    const table = getSelectedTable();
+    const cb = document.getElementById('chk-table-number-guard');
+    if (cb) cb.checked = state.guardTableNumber;
+    if (state.guardTableNumber || !table) { setTableNumberError(''); return; }
+    const dup = findDuplicateTableNumber(table.tableNumber, table.id);
+    setTableNumberError(dup ? `桌號「${table.tableNumber}」與其他桌（${dup}）重複，存檔前請確認` : '');
+  }
+
+  // 全部重複的桌號清單（去重後），供存檔前提示
+  function duplicateTableNumbers() {
+    const seen = new Map();
+    state.tables.forEach(t => {
+      const key = normalizeTableNumber(t.tableNumber);
+      seen.set(key, (seen.get(key) || 0) + 1);
+    });
+    return state.tables.filter(t => seen.get(normalizeTableNumber(t.tableNumber)) > 1)
+      .map(t => t.tableNumber)
+      .filter((v, i, arr) => arr.indexOf(v) === i);
+  }
+
   function getNextTableNumber() {
     const used = new Set(state.tables.map(t => parseInt(t.tableNumber, 10)).filter(Number.isFinite));
     let n = 2; // 桌號從 02 起算，優先補上最小的空號
@@ -476,6 +506,7 @@
     state.swapSourceSeatIndex = null;
     state.align.ids = [];
     state.rsvpSel = -1;
+    state.batchDrafts = {};
     saveToLocalStorage(true);
     renderAll();
     showToast('已全部重製為預設 15 桌配置', true);
@@ -757,6 +788,7 @@
     renderSeatRows(table);
     renderSeatDetail();
     syncBatchTextarea(table);
+    refreshTableNumberWarning();
   }
 
   function renderEditorHeader() {
@@ -835,10 +867,24 @@
     }
   }
 
+  // 未套用的整桌名單草稿數量（切換桌次時保留，套用後清除）
+  function updateBatchDraftStatus() {
+    const el = document.getElementById('batch-draft-status');
+    if (!el) return;
+    const n = Object.keys(state.batchDrafts).filter(id => state.tables.some(t => t.id === id)).length;
+    el.textContent = `有 ${n} 桌的名單尚未套用（切換桌次會保留；按「套用名單至本桌」才會寫入，存檔前也請先套用）`;
+    el.hidden = n === 0;
+  }
+
   function syncBatchTextarea(table) {
     const textarea = document.getElementById('textarea-batch-seats');
     if (!textarea || document.activeElement === textarea) return;
+    updateBatchDraftStatus();
 
+    if (state.batchDrafts[table.id] !== undefined) {
+      textarea.value = state.batchDrafts[table.id];
+      return;
+    }
     const lines = table.seats.map(seat => {
       const parts = [];
       if (seat.name) parts.push(seat.name);
@@ -916,6 +962,7 @@
       };
     }
 
+    delete state.batchDrafts[table.id];
     saveToLocalStorage(true);
     renderAll();
     showToast(`已套用「${table.tableNumber} 桌」1～10 號座位名單`, true);
@@ -1852,23 +1899,38 @@
       if (!table) return;
       const v = e.target.value.trim();
       const dup = v ? findDuplicateTableNumber(v, table.id) : '';
-      setTableNumberError(dup ? `桌號「${v}」與其他桌（${dup}）重複，請換一個` : '');
-      e.target.setAttribute('aria-invalid', String(Boolean(dup)));
-      if (!v || dup) return;
+      if (state.guardTableNumber) {
+        setTableNumberError(dup ? `桌號「${v}」與其他桌（${dup}）重複，請換一個` : '');
+        e.target.setAttribute('aria-invalid', String(Boolean(dup)));
+        if (!v || dup) return;
+      } else {
+        if (!v) return;
+        refreshTableNumberWarning();
+      }
       table.tableNumber = v;
       saveToLocalStorage(true);
       renderAll();
     });
-    // 離開欄位時若仍為空白或重複，還原為原桌號
+    // 離開欄位時：防呆開啟且仍為空白或重複，還原為原桌號；防呆關閉則保留（允許暫時重複）
     on('input-table-number', 'change', e => {
       const table = getSelectedTable();
       if (!table) return;
       const v = e.target.value.trim();
-      if (v && !findDuplicateTableNumber(v, table.id)) return;
+      if (!state.guardTableNumber) {
+        if (v) return;
+      } else if (v && !findDuplicateTableNumber(v, table.id)) {
+        return;
+      }
       e.target.value = table.tableNumber;
       e.target.setAttribute('aria-invalid', 'false');
       setTableNumberError('');
       showToast(`桌號無效或重複，已還原為 ${table.tableNumber} 桌`);
+    });
+    on('chk-table-number-guard', 'change', e => {
+      state.guardTableNumber = e.target.checked;
+      saveToLocalStorage(false);
+      refreshTableNumberWarning();
+      showToast(state.guardTableNumber ? '桌號防呆已開啟' : '桌號防呆已關閉：可暫時重複，改完後再存檔');
     });
     on('input-table-alias', 'input', e => {
       const table = getSelectedTable();
@@ -1975,6 +2037,16 @@
 
     // Batch tab
     on('btn-apply-batch-text', 'click', applyBatchTextToTable);
+    // 整桌快速設定會改寫座位，先丟棄該桌的未套用草稿（須在下方各按鈕的 handler 之前註冊）
+    ['btn-table-all-meat', 'btn-table-all-veg', 'btn-table-add-child', 'btn-table-all-gift', 'btn-table-clear-all'].forEach(id => {
+      on(id, 'click', () => { const t = getSelectedTable(); if (t) delete state.batchDrafts[t.id]; });
+    });
+    on('textarea-batch-seats', 'input', e => {
+      const table = getSelectedTable();
+      if (!table) return;
+      state.batchDrafts[table.id] = e.target.value;
+      updateBatchDraftStatus();
+    });
     on('btn-table-all-meat', 'click', () => {
       const table = getSelectedTable();
       if (!table) return;

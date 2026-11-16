@@ -1451,6 +1451,89 @@
     return { svg: out.join(''), w, h };
   }
 
+  // 仿「輸出座位圖」版面的 Excel：每桌 5 欄（座號、姓名、素、童、禮）+ 1 欄間隔，每列 7 桌
+  // 樣式需 xlsx-js-style；若只載入社群版 SheetJS，s 會被忽略，仍輸出無色版面
+  function exportSeatChartXlsx() {
+    if (typeof XLSX === 'undefined') { showToast('Excel 元件未載入，無法匯出'); return; }
+    const tables = sortTables(state.tables);
+    const totals = computeTotals();
+    const PER_ROW = 7, W = 6, TOP = 4, BLOCK = 2 + SEATS_PER_TABLE + 1;
+    const MARK_COL = { veg: 2, child: 3, gift: 4 };
+    const ws = {};
+    const merges = [];
+    const font = (sz, color, bold) => ({ name: 'Microsoft JhengHei', sz, color: { rgb: color }, bold: !!bold });
+    const put = (r, c, v, s) => { ws[XLSX.utils.encode_cell({ r, c })] = { v, t: typeof v === 'number' ? 'n' : 's', s }; };
+    const tag = m => ({ font: font(11, 'FFFFFF', true), fill: { fgColor: { rgb: MARKS[m].color.slice(1) } }, alignment: { horizontal: 'center', vertical: 'center' } });
+
+    put(0, 0, '金饌廳 桌次座位圖', { font: font(22, '1C4B5C', true) });
+    put(1, 0, `${EVENT_LABEL}｜共 ${totals.tables} 桌，已入座 ${totals.seated} 位（葷 ${totals.meat}／素 ${totals.veg}／兒童椅 ${totals.child}／小物 ${totals.gift}）`, { font: font(12, '12303A') });
+    [['veg', '素食'], ['child', '兒童椅'], ['gift', '婚禮小物']].forEach(([m, label], i) => {
+      put(2, i * W, MARKS[m].text, tag(m));
+      put(2, i * W + 1, label, { font: font(11, '12303A') });
+    });
+    put(2, 3 * W, '未標示＝葷食', { font: font(11, '4F6670') });
+    const lastCol = PER_ROW * W - 2;
+    put(2, lastCol - 4, `輸出時間 ${formatNow()}`, { font: font(10, '4F6670'), alignment: { horizontal: 'right' } });
+    merges.push({ s: { r: 0, c: 0 }, e: { r: 0, c: lastCol } }, { s: { r: 1, c: 0 }, e: { r: 1, c: lastCol } },
+      { s: { r: 2, c: lastCol - 4 }, e: { r: 2, c: lastCol } });
+
+    tables.forEach((t, idx) => {
+      const r0 = TOP + Math.floor(idx / PER_ROW) * BLOCK;
+      const c0 = (idx % PER_ROW) * W;
+      const isMain = isMainTable(t), isOrange = t.zone === 'orange';
+      const headFill = { fgColor: { rgb: isMain ? 'FBECCB' : (isOrange ? 'FFEDD5' : 'E3F2F5') } };
+      const edge = { style: 'medium', color: { rgb: isMain ? 'B7862F' : (isOrange ? 'C2410C' : '7FB8C3') } };
+      const line = { style: 'thin', color: { rgb: 'E3EDF0' } };
+      const seated = seatedCount(t);
+      const vegs = t.seats.filter(s => isFilled(s) && s.diet === 'veg').length;
+      const numLabel = /^\d+$/.test(t.tableNumber) ? `${t.tableNumber} 桌` : t.tableNumber;
+      const alias = (t.alias || '') + (isOrange ? '（擴充區）' : '');
+
+      // 先鋪滿整張卡片的底色與框線，再填文字
+      for (let r = 0; r < 2 + SEATS_PER_TABLE; r++) {
+        for (let c = 0; c < W - 1; c++) {
+          const border = { bottom: r === 1 + SEATS_PER_TABLE ? edge : (r >= 1 ? line : undefined) };
+          if (r === 0) border.top = edge;
+          if (c === 0) border.left = edge;
+          if (c === W - 2) border.right = edge;
+          put(r0 + r, c0 + c, '', { border, ...(r < 2 ? { fill: headFill } : {}) });
+        }
+      }
+      const cell = (r, c) => ws[XLSX.utils.encode_cell({ r: r0 + r, c: c0 + c })];
+      const set = (r, c, v, extra) => { const x = cell(r, c); x.v = v; x.t = typeof v === 'number' ? 'n' : 's'; Object.assign(x.s, extra); };
+
+      set(0, 0, numLabel, { font: font(16, '1C4B5C', true), alignment: { vertical: 'center' } });
+      set(0, 2, `${seated}/${SEATS_PER_TABLE} 人`, { font: font(11, '12303A', true), alignment: { horizontal: 'right', vertical: 'center' } });
+      set(1, 0, alias, { font: font(10, '12303A') });
+      set(1, 2, `葷 ${seated - vegs}　素 ${vegs}`, { font: font(9, '4F6670'), alignment: { horizontal: 'right' } });
+      merges.push({ s: { r: r0, c: c0 }, e: { r: r0, c: c0 + 1 } }, { s: { r: r0, c: c0 + 2 }, e: { r: r0, c: c0 + 4 } },
+        { s: { r: r0 + 1, c: c0 }, e: { r: r0 + 1, c: c0 + 1 } }, { s: { r: r0 + 1, c: c0 + 2 }, e: { r: r0 + 1, c: c0 + 4 } });
+
+      t.seats.forEach((seat, i) => {
+        const filled = isFilled(seat);
+        let name = filled ? ((seat.name || '').trim() || '兒童座椅') : '（空位）';
+        if (seat.hasGift && seat.giftNote) name += `（禮：${seat.giftNote}）`;
+        set(2 + i, 0, seat.seatIndex, { font: font(10, '4F6670', true), alignment: { horizontal: 'center' } });
+        set(2 + i, 1, name, { font: font(11, filled ? '12303A' : '64748B', filled) });
+        seatMarks(seat).forEach(m => set(2 + i, MARK_COL[m], MARKS[m].text, tag(m)));
+      });
+    });
+
+    const nRows = TOP + Math.ceil(tables.length / PER_ROW) * BLOCK;
+    ws['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: nRows - 1, c: lastCol } });
+    ws['!merges'] = merges;
+    ws['!cols'] = Array.from({ length: lastCol + 1 }, (_, c) => ({ wch: [4, 16, 3.5, 3.5, 3.5, 2][c % W] }));
+    ws['!rows'] = Array.from({ length: nRows }, (_, r) => {
+      if (r === 0) return { hpt: 34 };
+      const k = r < TOP ? -1 : (r - TOP) % BLOCK;
+      return { hpt: k === 0 ? 26 : (k === BLOCK - 1 ? 10 : 18) };
+    });
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '桌次座位圖');
+    XLSX.writeFile(wb, '金饌廳_桌次座位圖.xlsx');
+    showToast('已匯出 Excel：金饌廳_桌次座位圖.xlsx');
+  }
+
   function downloadBlob(blob, filename) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -1789,6 +1872,7 @@
     on('btn-save-cloud', 'click', saveToCloud);
     on('btn-load-cloud', 'click', () => { closeMenu(); loadFromCloud(); });
     on('btn-export-excel', 'click', () => { closeMenu(); exportToExcel(); });
+    on('btn-export-seatchart-xlsx', 'click', () => { closeMenu(); exportSeatChartXlsx(); });
     on('btn-export-png', 'click', exportChartPng);
     on('btn-print-chart', 'click', () => { closeMenu(); fillPrintChart(); window.print(); });
     window.addEventListener('beforeprint', fillPrintChart);

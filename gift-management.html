@@ -222,7 +222,7 @@
 
     .stat-dashboard {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(5, 1fr);
       gap: 8px;
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       overflow: hidden;
@@ -423,6 +423,19 @@
     .clear-search-btn:hover {
       color: var(--text-main);
       background: rgba(0, 0, 0, 0.05);
+    }
+
+    .sort-select {
+      height: 42px;
+      padding: 0 10px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      border: 1.5px solid var(--input-border);
+      border-radius: var(--radius-md);
+      background: var(--input-bg);
+      color: var(--text-main);
+      flex-shrink: 0;
+      cursor: pointer;
     }
 
     .icon-btn {
@@ -1203,6 +1216,10 @@
           <div class="stat-value highlight stat-amount-val" id="stat-total-amount">$0</div>
         </div>
         <div class="stat-item">
+          <div class="stat-label">🎁 喜餅數量</div>
+          <div class="stat-value" id="stat-total-cakes">0 <span class="stat-subtext">盒</span></div>
+        </div>
+        <div class="stat-item">
           <div class="stat-label">🤵 男方報到</div>
           <div class="stat-value" id="stat-groom-count">0 / 0 <span class="stat-subtext">人</span></div>
         </div>
@@ -1235,6 +1252,13 @@
             <input type="text" id="search-input" class="search-input" placeholder="搜尋姓名、陣營或備註..." autocomplete="off">
             <button id="clear-search" class="clear-search-btn" title="清除搜尋">✕</button>
           </div>
+          <select id="sort-select" class="sort-select" aria-label="排序方式">
+            <option value="name">姓名 A→Z</option>
+            <option value="default">登錄順序</option>
+            <option value="amount-desc">金額 高→低</option>
+            <option value="checkin-first">已報到優先</option>
+            <option value="side">陣營</option>
+          </select>
           <button id="toggle-amounts" class="icon-btn" title="切換金額隱藏/顯示" aria-label="隱藏或顯示金額">
             <span id="eye-icon">🙈</span>
           </button>

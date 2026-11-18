@@ -25,6 +25,7 @@ let currentGuest = null;
 let filterMode = localStorage.getItem('gift_filter_mode') || 'all'; // 'all' | 'groom' | 'bride'
 let searchKeyword = '';
 let viewMode = 'edit'; // 'edit' | 'add'
+let sortMode = localStorage.getItem('gift_sort_mode') || 'name'; // 'name' | 'default' | 'amount-desc' | 'checkin-first' | 'side'
 
 // ==================== Initialize ====================
 function init() {
@@ -120,7 +121,20 @@ function getFilteredAndSearchedData() {
     });
   }
 
-  return list;
+  return sortGuests(list);
+}
+
+// 依排序方式回傳新陣列（不改動 guestData）；預設保留登錄順序
+function sortGuests(list) {
+  const cmpName = (a, b) => String(a['姓名'] || '').localeCompare(String(b['姓名'] || ''), 'zh-Hant');
+  const comparators = {
+    'name': cmpName,
+    'amount-desc': (a, b) => (Number(b['金額']) || 0) - (Number(a['金額']) || 0) || cmpName(a, b),
+    'checkin-first': (a, b) => Number(isCheckedIn(b)) - Number(isCheckedIn(a)) || cmpName(a, b),
+    'side': (a, b) => String(a['陣營'] || '').localeCompare(String(b['陣營'] || ''), 'zh-Hant') || cmpName(a, b)
+  };
+  const cmp = comparators[sortMode];
+  return cmp ? [...list].sort(cmp) : list;
 }
 
 // 判斷賓客是否標記為「不收取禮金」
@@ -161,8 +175,8 @@ function hasVegetarianDiet(dietRaw) {
   return str.includes('素') || str.includes('ベジ') || str.toLowerCase().includes('veg');
 }
 
-// 根據賓客姓名與陣營從報名清單 (rsvpData) 取得葷素標記（有素食標記「素食」，無素食標記「葷食」）
-function getGuestDietInfo(guest) {
+// 根據賓客姓名與陣營從報名清單 (rsvpData) 找出最後一筆報名資料；找不到回傳 null
+function findLatestRsvp(guest) {
   const name = String(guest['姓名'] || '').trim();
   const side = String(guest['陣營'] || '').trim();
 
@@ -191,7 +205,18 @@ function getGuestDietInfo(guest) {
     }
   }
 
-  const latestRsvp = matchedRsvp.length > 0 ? matchedRsvp[matchedRsvp.length - 1] : null;
+  return matchedRsvp.length > 0 ? matchedRsvp[matchedRsvp.length - 1] : null;
+}
+
+// 報到人數：取報名的「參與人數」，無報名資料時視為 1 人
+function getGuestPax(guest) {
+  const rsvp = findLatestRsvp(guest);
+  return Math.max(1, Number(rsvp?.['參與人數']) || 1);
+}
+
+// 根據賓客姓名與陣營從報名清單 (rsvpData) 取得葷素標記（有素食標記「素食」，無素食標記「葷食」）
+function getGuestDietInfo(guest) {
+  const latestRsvp = findLatestRsvp(guest);
   const dietRaw = latestRsvp
     ? (latestRsvp['葷素選擇'] ?? latestRsvp['葷素'] ?? latestRsvp['飲食'] ?? '')
     : (guest['葷素選擇'] ?? guest['葷素'] ?? guest['飲食'] ?? '');
@@ -206,40 +231,42 @@ function getGuestDietInfo(guest) {
 
 // 更新頂部儀表板統計數字
 function updateStats() {
-  const totalGuests = guestData.length;
+  // 人數以報名的「參與人數」計算；一筆禮金可能代表多人
   let totalAmount = 0;
-  let totalPaid = 0;
+  let totalCakes = 0;
+  let totalPeople = 0;
+  let checkedPeople = 0;
   let groomTotal = 0;
   let groomPaid = 0;
   let brideTotal = 0;
   let bridePaid = 0;
 
   guestData.forEach(g => {
-    const amt = Number(g['金額']) || 0;
+    const pax = getGuestPax(g);
     const checkedIn = isCheckedIn(g);
-    totalAmount += amt;
-    if (checkedIn) totalPaid++;
+    totalAmount += Number(g['金額']) || 0;
+    totalCakes += Number(g['喜餅數量']) || 0;
+    totalPeople += pax;
+    if (checkedIn) checkedPeople += pax;
 
     const side = String(g['陣營'] || '');
     if (side.includes('男方')) {
-      groomTotal++;
-      if (checkedIn) groomPaid++;
+      groomTotal += pax;
+      if (checkedIn) groomPaid += pax;
     }
     if (side.includes('女方')) {
-      brideTotal++;
-      if (checkedIn) bridePaid++;
+      brideTotal += pax;
+      if (checkedIn) bridePaid += pax;
     }
   });
 
-  const totalGuestsEl = document.getElementById('stat-total-guests');
-  const totalAmountEl = document.getElementById('stat-total-amount');
-  const groomCountEl = document.getElementById('stat-groom-count');
-  const brideCountEl = document.getElementById('stat-bride-count');
-
-  if (totalGuestsEl) totalGuestsEl.innerHTML = `${totalPaid} / ${totalGuests} <span class="stat-subtext">人</span>`;
-  if (totalAmountEl) totalAmountEl.textContent = '$' + totalAmount.toLocaleString();
-  if (groomCountEl) groomCountEl.innerHTML = `${groomPaid} / ${groomTotal} <span class="stat-subtext">人</span>`;
-  if (brideCountEl) brideCountEl.innerHTML = `${bridePaid} / ${brideTotal} <span class="stat-subtext">人</span>`;
+  const setHtml = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
+  setHtml('stat-total-guests', `${checkedPeople} / ${totalPeople} <span class="stat-subtext">人</span>`);
+  setHtml('stat-groom-count', `${groomPaid} / ${groomTotal} <span class="stat-subtext">人</span>`);
+  setHtml('stat-bride-count', `${bridePaid} / ${brideTotal} <span class="stat-subtext">人</span>`);
+  setHtml('stat-total-cakes', `${totalCakes} <span class="stat-subtext">盒</span>`);
+  const amountEl = document.getElementById('stat-total-amount');
+  if (amountEl) amountEl.textContent = '$' + totalAmount.toLocaleString();
 }
 
 // 統一渲染入口：保證依目前 filter 和搜尋呈現清單
@@ -731,6 +758,15 @@ function attachEventListeners() {
   // Filter tabs
   document.querySelectorAll('.filter-btn[data-filter]').forEach(btn => {
     btn.addEventListener('click', () => setFilter(btn.dataset.filter));
+  });
+
+  // Sort dropdown (記住上次選擇)
+  const sortSelect = document.getElementById('sort-select');
+  sortSelect.value = sortMode;
+  sortSelect.addEventListener('change', (e) => {
+    sortMode = e.target.value;
+    localStorage.setItem('gift_sort_mode', sortMode);
+    renderCurrentList();
   });
 }
 

@@ -1,5 +1,5 @@
 // ==================== Configuration ====================
-const API_URL = 'https://script.google.com/macros/s/AKfycbxK7R2lWFy16dodZ3DOLEiCGqwhzUWvlEK1f_oSNQq0IxOAo1aAle919AiGm-u2io4qJQ/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbwmHwYw59MPao4n85OaUS8oL3-swQ__oi29lRz6NQnNfzS_p8T9f5zPzrx-mZs6bnP5kg/exec';
 
 // ==================== Text Content ====================
 const text = {
@@ -132,6 +132,11 @@ function isNoGift(guest) {
   return ['是', 'true', '1', 'v', '✓', 'y', 'yes', '不收', '不收取', '不收禮金', '不收取禮金'].includes(str);
 }
 
+// 判斷賓客是否已報到（以「已報到」欄為準，與禮金的「更新時間」無關）
+function isCheckedIn(guest) {
+  return String(guest?.['已報到'] ?? '').trim() === '是';
+}
+
 // 同步編輯畫面上名字後方的「不收取禮金」註記標籤
 function syncNoGiftBadges(checked) {
   const labelBadge = document.getElementById('edit-label-nogift-badge');
@@ -211,18 +216,18 @@ function updateStats() {
 
   guestData.forEach(g => {
     const amt = Number(g['金額']) || 0;
-    const isCheckedIn = Boolean(String(g['更新時間'] || '').trim());
+    const checkedIn = isCheckedIn(g);
     totalAmount += amt;
-    if (isCheckedIn) totalPaid++;
+    if (checkedIn) totalPaid++;
 
     const side = String(g['陣營'] || '');
     if (side.includes('男方')) {
       groomTotal++;
-      if (isCheckedIn) groomPaid++;
+      if (checkedIn) groomPaid++;
     }
     if (side.includes('女方')) {
       brideTotal++;
-      if (isCheckedIn) bridePaid++;
+      if (checkedIn) bridePaid++;
     }
   });
 
@@ -257,9 +262,9 @@ function renderCurrentList() {
     const amount = Number(guest['金額']) || 0;
     const isPaid = amount > 0;
     const amountPaidClass = isPaid ? 'paid' : '';
-    const updateTime = String(guest['更新時間'] || '').trim();
-    const isCheckedIn = Boolean(updateTime);
-    const namePaidClass = isCheckedIn ? 'paid' : '';
+    const checkedIn = isCheckedIn(guest);
+    const checkinTime = String(guest['報到時間'] || '').trim();
+    const namePaidClass = checkedIn ? 'paid' : '';
     const name = String(guest['姓名'] || '').trim();
     const side = String(guest['陣營'] || '').trim();
     const isGroom = side.includes('男方');
@@ -269,7 +274,7 @@ function renderCurrentList() {
 
     const cakes = Number(guest['喜餅數量']) || 0;
     const note = String(guest['備註/合包明細'] || '').trim();
-    const formattedTime = updateTime ? formatTaiwanDateTime(updateTime) : '';
+    const formattedTime = checkinTime ? formatTaiwanDateTime(checkinTime) : '';
     const dietInfo = getGuestDietInfo(guest);
     const dietBadgeType = dietInfo.isVeg ? 'veg' : 'meat';
     const noGift = isNoGift(guest);
@@ -288,7 +293,7 @@ function renderCurrentList() {
             <div class="guest-meta-row">
               ${cakes > 0 ? `<span class="guest-tag cake">🎁 喜餅 ${cakes} 盒</span>` : ''}
               ${note ? `<span class="guest-tag" title="${escapeHtml(note)}">📝 ${escapeHtml(note)}</span>` : ''}
-              ${formattedTime ? `<span class="guest-tag time">🕒 ${escapeHtml(formattedTime)}</span>` : ''}
+              ${formattedTime ? `<span class="guest-tag time">✅ 報到 ${escapeHtml(formattedTime)}</span>` : ''}
             </div>
           </div>
         </div>
@@ -383,6 +388,10 @@ function openEditView(guest) {
     timeWrapEl.classList.add('hidden');
   }
 
+  // 報到按鈕（僅編輯既有賓客時顯示）
+  document.getElementById('btn-checkin').classList.remove('hidden');
+  updateCheckinButton();
+
   // 姓名 (唯讀)
   const nameInput = document.getElementById('edit-name');
   nameInput.value = guest['姓名'] || '';
@@ -418,6 +427,7 @@ function openAddView() {
 
   document.getElementById('view-title').textContent = text.add_title;
   document.getElementById('view-update-time').classList.add('hidden');
+  document.getElementById('btn-checkin').classList.add('hidden');
 
   // 姓名 (可輸入)
   const nameInput = document.getElementById('edit-name');
@@ -509,6 +519,48 @@ function toggleStatsDashboard() {
     dashboard.classList.add('collapsed');
     btn.setAttribute('aria-expanded', 'false');
     btn.textContent = '📊 報到統計看板 ▾';
+  }
+}
+
+// 報到按鈕文字與樣式依目前狀態切換
+function updateCheckinButton() {
+  const btn = document.getElementById('btn-checkin');
+  const checked = Boolean(currentGuest) && isCheckedIn(currentGuest);
+  btn.textContent = checked ? '↩ 取消報到' : '✅ 確認報到';
+  btn.classList.toggle('is-checked', checked);
+}
+
+// 報到／取消報到：立即寫入，不需要按「確認儲存」
+async function handleCheckin() {
+  if (!currentGuest) return;
+  const name = String(currentGuest['姓名']).trim();
+  const side = String(currentGuest['陣營']).trim();
+  const checkedIn = !isCheckedIn(currentGuest);
+  const now = formatTaiwanDateTime(new Date());
+
+  // 樂觀更新：先改本地資料與畫面
+  const idx = guestData.findIndex(g => String(g['姓名']).trim() === name && String(g['陣營']).trim() === side);
+  if (idx !== -1) {
+    guestData[idx] = { ...guestData[idx], '已報到': checkedIn ? '是' : '', '報到時間': checkedIn ? now : '' };
+    currentGuest = guestData[idx];
+  }
+  renderCurrentList();
+  updateCheckinButton();
+  showToast(checkedIn ? '已報到' : '已取消報到', 'success');
+
+  try {
+    await fetch(API_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ formType: 'gift', action: 'checkin', name, side, checkedIn })
+    });
+    setTimeout(() => {
+      loadGuestData(false);
+    }, 1500);
+  } catch (error) {
+    console.error('Checkin sync error:', error);
+    showToast(text.error_save, 'error');
   }
 }
 
@@ -660,6 +712,7 @@ function attachEventListeners() {
   document.getElementById('btn-back').addEventListener('click', closeEditView);
   document.getElementById('edit-form').addEventListener('submit', handleSave);
   document.getElementById('btn-add').addEventListener('click', openAddView);
+  document.getElementById('btn-checkin').addEventListener('click', handleCheckin);
 
   // Quick preset amount buttons
   document.querySelector('.quick-amounts')?.addEventListener('click', handleQuickAmount);

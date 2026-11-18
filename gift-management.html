@@ -3,7 +3,7 @@
 <head>
   <title>賓客報到系統</title>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧧</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -763,6 +763,31 @@
       color: var(--primary);
     }
 
+    .btn-checkin {
+      position: absolute;
+      right: 0;
+      top: 0;
+      min-height: 36px;
+      padding: 6px 12px;
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #ffffff;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      border: none;
+      border-radius: var(--radius-full);
+      box-shadow: 0 3px 10px var(--success-glow);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-checkin.is-checked {
+      color: var(--text-sub);
+      background: var(--btn-secondary-bg);
+      border: 1px solid var(--input-border);
+      box-shadow: none;
+    }
+
     .edit-title {
       font-size: 1.35rem;
       font-weight: 800;
@@ -1110,6 +1135,48 @@
         max-width: none;
       }
     }
+
+    /* Tablet: 名單改為兩欄，表單與看板放寬 */
+    @media (min-width: 768px) {
+      .container {
+        max-width: 960px;
+      }
+
+      .header h1 {
+        font-size: 2rem;
+      }
+
+      .guest-list {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-content: start;
+        gap: 8px;
+      }
+
+      .guest-list > .empty-state,
+      .guest-list > .loading-state {
+        grid-column: 1 / -1;
+      }
+
+      .guest-item {
+        margin-bottom: 0;
+      }
+
+      .edit-view-card {
+        max-width: 680px;
+      }
+    }
+
+    /* Desktop: 名單三欄 */
+    @media (min-width: 1200px) {
+      .container {
+        max-width: 1140px;
+      }
+
+      .guest-list {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
   </style>
 </head>
 <body>
@@ -1188,6 +1255,7 @@
       <div class="card edit-view-card">
         <div class="edit-header">
           <button type="button" id="btn-back" class="btn-back">← 返回</button>
+          <button type="button" id="btn-checkin" class="btn-checkin hidden">✅ 確認報到</button>
           <h2 id="view-title" class="edit-title">編輯禮金</h2>
           <div id="view-update-time" class="edit-time-subtitle hidden">
             <span>🕒</span> <span id="update-time-text">更新時間：-</span>

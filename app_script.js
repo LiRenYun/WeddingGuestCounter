@@ -121,13 +121,13 @@ function doPost(e) {
       var formattedTime = formatCustomDateTime(timestamp);
 
       // 強制確保標題列正確（避免手動編輯造成欄位錯位）
-      var correctHeaders = ["姓名", "陣營", "金額", "喜餅數量", "備註/合包明細", "更新時間", "不收取禮金"];
+      var correctHeaders = ["姓名", "陣營", "金額", "喜餅數量", "備註/合包明細", "更新時間", "不收取禮金", "已報到", "報到時間"];
       if (sheet.getLastRow() === 0) {
         sheet.appendRow(correctHeaders);
       } else {
         // 檢查並修正標題列
         var maxCols = Math.max(sheet.getLastColumn(), 7);
-        var headers = sheet.getRange(1, 1, 1, 7).getValues()[0];
+        var headers = sheet.getRange(1, 1, 1, correctHeaders.length).getValues()[0];
         var needsUpdate = false;
         for (var i = 0; i < correctHeaders.length; i++) {
           if (headers[i] !== correctHeaders[i]) {
@@ -136,14 +136,20 @@ function doPost(e) {
           }
         }
         if (needsUpdate) {
-          sheet.getRange(1, 1, 1, 7).setValues([correctHeaders]);
+          sheet.getRange(1, 1, 1, correctHeaders.length).setValues([correctHeaders]);
         }
       }
 
       var noGiftVal = (data.noGift === true || data.noGift === '是' || data.noGift === '不收取禮金') ? "是" : "";
 
       // 判斷是否為更新操作
-      if (data.action === 'update') {
+      if (data.action === 'checkin') {
+        // 報到：只改「已報到」「報到時間」兩欄，不影響金額與更新時間；找不到則新增一列
+        var checkedIn = data.checkedIn === true;
+        if (!setGiftCheckin(sheet, data.name, data.side, checkedIn, formattedTime)) {
+          sheet.appendRow([data.name || "", data.side || "", 0, 0, "", "", "", checkedIn ? "是" : "", checkedIn ? formattedTime : ""]);
+        }
+      } else if (data.action === 'update') {
         // 依「姓名+陣營」更新金額、喜餅數量、備註、更新時間與不收取禮金；找不到則新增
         var updated = updateGiftAmount(
           sheet, data.name, data.side, data.amount,
@@ -464,6 +470,25 @@ function updateGiftAmount(sheet, name, side, amount, cakes, note, timestamp, noG
 }
 
 /**
+ * 報到：依「姓名+陣營」定位禮金列，寫入第 8 欄「已報到」（是/空白）與第 9 欄「報到時間」。
+ * 找到回傳 true；找不到回傳 false。
+ */
+function setGiftCheckin(sheet, name, side, checkedIn, timestamp) {
+  var lastRow = sheet.getLastRow();
+  if (lastRow <= 1) return false;
+
+  var rows = sheet.getRange(2, 1, lastRow - 1, 2).getValues();
+  for (var i = 0; i < rows.length; i++) {
+    if (rows[i][0].toString().trim() === name.toString().trim() &&
+        rows[i][1].toString().trim() === side.toString().trim()) {
+      sheet.getRange(i + 2, 8, 1, 2).setValues([[checkedIn ? "是" : "", checkedIn ? timestamp : ""]]);
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * 報名時自動在「禮金紀錄」建立預設資料（金額設為 0）。
  * 複用 syncToCheckinSheet 的模式：檢查是否已存在同名+同陣營的紀錄，沒有才新增。
  * 包在 try/catch 確保非阻塞（不影響 RSVP 主流程）。
@@ -476,7 +501,7 @@ function syncToGiftSheet(ss, name, side) {
   if (!name) return;
   var sheet = getOrCreateSheet(ss, "禮金紀錄");
   if (sheet.getLastRow() === 0) {
-    sheet.appendRow(["姓名", "陣營", "金額", "喜餅數量", "備註/合包明細", "更新時間", "不收取禮金"]);
+    sheet.appendRow(["姓名", "陣營", "金額", "喜餅數量", "備註/合包明細", "更新時間", "不收取禮金", "已報到", "報到時間"]);
   }
 
   // 檢查是否已存在同名+同陣營的紀錄，避免重複新增

@@ -117,6 +117,7 @@
     /* ---------- Masthead ---------- */
     .masthead { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
     .title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .head-actions { display: flex; align-items: center; gap: 8px; }
     h1 { font-family: var(--serif); font-weight: 900; font-size: 1.7rem; letter-spacing: 0.02em; }
     .sync { font-size: 0.85rem; color: var(--ink-3); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     .sync[data-state="error"] { color: var(--warn); }
@@ -182,10 +183,10 @@
       border: 1.5px solid var(--line-strong); background: transparent; color: var(--ink-2);
       font-weight: 500; font-size: 0.95rem; line-height: 1.15; transition: background-color .15s ease, color .15s ease;
     }
-    .seal:hover { border-color: var(--seal); color: var(--seal); }
+    .seal:hover { border-color: var(--ink-2); color: var(--ink); }
     .seal:disabled { cursor: progress; opacity: .6; }
-    .seal.is-in { background: var(--seal); border-color: var(--seal); color: var(--seal-ink); }
-    .seal.is-in:hover { background: var(--seal-hover); border-color: var(--seal-hover); color: var(--seal-ink); }
+    .seal.is-in { background: var(--ok); border-color: var(--ok); color: var(--seal-ink); }
+    .seal.is-in:hover { filter: brightness(.92); color: var(--seal-ink); }
     .seal-no { display: block; font-family: var(--serif); font-size: 1.45rem; font-weight: 900; font-variant-numeric: tabular-nums; }
     .seal-no-label { display: block; font-size: 0.7rem; opacity: .9; }
     .seal.is-new { animation: stamp .32s cubic-bezier(.2, .8, .2, 1); }
@@ -298,7 +299,10 @@
     <header class="masthead">
       <div class="title-row">
         <h1>賓客報到</h1>
-        <button id="btn-add" class="btn btn-primary" type="button">新增賓客</button>
+        <div class="head-actions">
+          <button id="btn-theme" class="icon-btn" type="button" aria-label="切換深色／淺色模式"></button>
+          <button id="btn-add" class="btn btn-primary" type="button">新增賓客</button>
+        </div>
       </div>
       <p id="sync-status" class="sync" data-state="saving" role="status" aria-live="polite">
         <span class="sync-dot" aria-hidden="true"></span>

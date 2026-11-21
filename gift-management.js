@@ -9,13 +9,44 @@ let currentRenderedList = [];
 let currentGuest = null;
 let viewMode = 'edit';   // 'edit' | 'add'
 let filterMode = localStorage.getItem('gift_filter_mode') || 'all';   // 'all' | 'groom' | 'bride'
-let sortMode = localStorage.getItem('gift_sort_mode') || 'name';
+let sortMode = localStorage.getItem('gift_sort_mode_v2') || 'name';
 let searchKeyword = '';
 const busy = new Set();  // 寫入中的賓客 key，避免重複送出
 let lastStamped = null;  // 剛報到的賓客 key，用於印章動畫
 
 // ==================== Init ====================
+// ==================== Theme (icon toggle) ====================
+const ICON_MOON = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>';
+const ICON_SUN = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+
+function currentTheme() {
+  return document.documentElement.dataset.theme
+    || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+}
+
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  const btn = document.getElementById('btn-theme');
+  const toDark = theme !== 'dark';
+  btn.innerHTML = toDark ? ICON_MOON : ICON_SUN;
+  btn.setAttribute('aria-label', toDark ? '切換為深色模式' : '切換為淺色模式');
+}
+
+function initTheme() {
+  try {
+    const saved = localStorage.getItem('gift_theme');
+    if (saved) document.documentElement.dataset.theme = saved;
+  } catch (e) { /* 無法存取 localStorage 時使用系統設定 */ }
+  applyTheme(currentTheme());
+  document.getElementById('btn-theme').addEventListener('click', () => {
+    const next = currentTheme() === 'dark' ? 'light' : 'dark';
+    try { localStorage.setItem('gift_theme', next); } catch (e) { /* 忽略 */ }
+    applyTheme(next);
+  });
+}
+
 function init() {
+  initTheme();
   document.body.classList.add('amounts-hidden');
   document.getElementById('toggle-amounts').setAttribute('aria-pressed', 'false');
   document.querySelectorAll('.seg').forEach(btn => {
@@ -172,10 +203,12 @@ function sortGuests(list) {
   const comparators = {
     'name': byName,
     // 報到順序由小到大；未報到的排在後面
+    // 先男方、再女方，各自由小到大；未報到的排最後
     'checkin-seq': (a, b) => {
-      const ca = isCheckedIn(a) ? checkinNo(a) : Infinity;
-      const cb = isCheckedIn(b) ? checkinNo(b) : Infinity;
-      return (ca - cb) || byName(a, b);
+      const rank = g => !isCheckedIn(g) ? 9 : (sideKey(g) === 'groom' ? 0 : (sideKey(g) === 'bride' ? 1 : 2));
+      const ka = rank(a), kb = rank(b);
+      if (ka !== kb) return ka - kb;
+      return ka === 9 ? byName(a, b) : (checkinNo(a) - checkinNo(b)) || byName(a, b);
     },
     'seat': (a, b) => {
       const sa = seatOf(a), sb = seatOf(b);
@@ -248,7 +281,7 @@ function renderList() {
     const seal = pending
       ? `<button class="seal${checked ? ' is-in' : ''}" type="button" disabled aria-busy="true" aria-label="寫入中：${escapeHtml(name)}">…</button>`
       : checked
-        ? `<button class="seal is-in${stamp}" type="button" data-action="checkin" data-index="${i}" aria-pressed="true" aria-label="取消報到：${escapeHtml(name)}，報到序號 ${no}"><span class="seal-no">${no || '—'}</span><span class="seal-no-label">已報到</span></button>`
+        ? `<button class="seal is-in${stamp}" type="button" data-action="checkin" data-index="${i}" aria-pressed="true" aria-label="取消報到：${escapeHtml(name)}，報到序號 ${no}"><span class="seal-no">${no || '…'}</span><span class="seal-no-label">已報到</span></button>`
         : `<button class="seal" type="button" data-action="checkin" data-index="${i}" aria-pressed="false" aria-label="報到：${escapeHtml(name)}"><span>報到</span></button>`;
 
     return `
@@ -289,11 +322,20 @@ async function toggleCheckin(guest) {
   if (busy.has(key)) return;
   const want = !isCheckedIn(guest);
   busy.add(key);
+  // 先更新畫面（不等 GAS），失敗時再還原
+  const idx = guestData.findIndex(g => rowKey(g) === key);
+  const prev = idx !== -1 ? guestData[idx] : null;
+  if (idx !== -1) {
+    guestData[idx] = { ...prev, '已報到': want ? '是' : '', '報到時間': want ? formatTaiwanDateTime(new Date()) : '', '報到序號': '' };
+  }
+  renderAll();
   setSync('saving', want ? '報到寫入中…' : '取消報到寫入中…');
-  renderList();
 
   try {
     const res = await postWrite({ formType: 'gift', action: 'checkin', name: guest['姓名'], side: guest['陣營'], checkedIn: want });
+    busy.delete(key);
+    if (want && idx !== -1) guestData[idx] = { ...guestData[idx], '報到序號': res.checkinNo };
+    renderAll();
     const data = await fetchGift();                       // 寫入後重新讀取，以資料庫為準
     guestData = data.gift;
     rsvpData = Array.isArray(data.rsvp) ? data.rsvp : rsvpData;
@@ -311,6 +353,7 @@ async function toggleCheckin(guest) {
     if (sandboxed(res)) showToast('沙盒模式：寫入已攔截，線上資料未變更', 'error');
   } catch (error) {
     console.error('Checkin error:', error);
+    if (idx !== -1) guestData[idx] = prev;   // 還原
     setSync('error', '寫入失敗，資料未變更');
     showToast('寫入失敗，資料未變更，請確認網路後重試', 'error');
   } finally {
@@ -402,9 +445,17 @@ async function handleSave(e) {
   if (amountStr === '' || isNaN(amountStr) || Number(amountStr) < 0) return showToast('請輸入有效金額', 'error');
   const amount = Number(amountStr);
 
-  const btn = document.getElementById('save-btn');
-  btn.disabled = true;
-  btn.textContent = '儲存中…';
+  // 先更新畫面並返回名單，寫入與核對在背景進行
+  const key = `${name}|${side}`;
+  const idx = guestData.findIndex(g => rowKey(g) === key);
+  const prev = idx !== -1 ? guestData[idx] : null;
+  const next = {
+    ...(prev || { '姓名': name, '陣營': side }),
+    '金額': amount, '喜餅數量': cakes, '備註/合包明細': note,
+    '不收取禮金': noGift ? '是' : '', '更新時間': formatTaiwanDateTime(new Date())
+  };
+  if (idx !== -1) guestData[idx] = next; else guestData.unshift(next);
+  closeEditView();
   setSync('saving', '儲存寫入中…');
   try {
     await postWrite({ formType: 'gift', action: 'update', name, side, amount, cakes, note, noGift });
@@ -417,17 +468,16 @@ async function handleSave(e) {
     const verified = row && Number(row['金額']) === amount && (Number(row['喜餅數量']) || 0) === cakes;
     if (verified) {
       showToast('儲存成功');
-      closeEditView();
     } else {
       showToast('儲存後核對不一致，請確認後再儲存', 'error');
     }
   } catch (error) {
     console.error('Save error:', error);
+    // 寫入失敗：還原本地資料
+    if (idx !== -1) guestData[idx] = prev; else guestData = guestData.filter(g => rowKey(g) !== key);
     setSync('error', '儲存失敗，資料未變更');
     showToast('儲存失敗，資料未變更，請重試', 'error');
   } finally {
-    btn.disabled = false;
-    btn.textContent = '確認儲存';
     renderAll();
   }
 }
@@ -474,7 +524,7 @@ function attachEventListeners() {
 
   document.getElementById('sort-select').addEventListener('change', (e) => {
     sortMode = e.target.value;
-    localStorage.setItem('gift_sort_mode', sortMode);
+    localStorage.setItem('gift_sort_mode_v2', sortMode);
     renderList();
   });
 

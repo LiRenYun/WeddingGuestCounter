@@ -31,6 +31,8 @@
       --ok-soft: #dcebe2;
       --warn: #9a6200;
       --warn-soft: #f6e9c8;
+      --nogift: #6d4a92;
+      --nogift-soft: #ece3f5;
       --focus: #2f4a6d;
       --radius: 12px;
       --radius-sm: 8px;
@@ -59,6 +61,8 @@
         --ok-soft: #1d3327;
         --warn: #e7b65c;
         --warn-soft: #3a2f16;
+        --nogift: #c9a6ea;
+        --nogift-soft: #2e2440;
         --focus: #9bbbe0;
       }
     }
@@ -199,12 +203,24 @@
     .chip.seat { font-variant-numeric: tabular-nums; }
     .chip.unassigned { color: var(--ink-3); border-style: dashed; }
     .chip.cake { color: var(--warn); }
-    .chip.note { white-space: normal; max-width: 100%; }
+    /* 備註：整行顯示、完整換行，不截斷 */
+    .meta .note {
+      flex-basis: 100%; white-space: normal; overflow-wrap: anywhere;
+      padding: 4px 10px; border-left: 3px solid var(--line-strong); background: var(--paper);
+      border-radius: 0 6px 6px 0; color: var(--ink); font-size: 0.92rem;
+    }
     .row-side { text-align: right; }
     .row-amount { font-family: var(--serif); font-size: 1.1rem; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--ink-2); }
     .row-amount.has { color: var(--ink); }
     .row-time { font-size: 0.75rem; color: var(--ink-3); margin-top: 2px; }
-    .diet { font-size: 0.8rem; color: var(--ink-3); }
+    /* 葷素與不收取禮金：小標籤，一眼可辨 */
+    .badge {
+      display: inline-flex; align-items: center; padding: 2px 9px; border-radius: 999px;
+      font-size: 0.8rem; font-weight: 700; border: 1px solid transparent; white-space: nowrap;
+    }
+    .badge.veg { color: var(--ok); background: var(--ok-soft); border-color: var(--ok); }
+    .badge.meat { color: var(--warn); background: var(--warn-soft); border-color: var(--warn); }
+    .badge.nogift { color: var(--nogift); background: var(--nogift-soft); border-color: var(--nogift); }
 
     .empty { padding: 40px 16px; text-align: center; color: var(--ink-3); }
     .skeleton { padding: 40px 16px; text-align: center; color: var(--ink-3); }

@@ -258,13 +258,13 @@ function renderList() {
           <span class="name-line">
             <span class="name">${escapeHtml(name)}</span>
             <span class="side-tag ${side}">${escapeHtml(sideText)}</span>
-            <span class="diet">${diet.label}</span>
-            ${isNoGift(g) ? '<span class="diet">不收取禮金</span>' : ''}
+            <span class="badge ${diet.isVeg ? 'veg' : 'meat'}">${diet.label}</span>
+            ${isNoGift(g) ? '<span class="badge nogift">不收取禮金</span>' : ''}
           </span>
           <span class="meta">
             <span class="chip seat${seat ? '' : ' unassigned'}">${escapeHtml(seatLabel(seat))}</span>
             ${cakes > 0 ? `<span class="chip cake">喜餅 ${cakes} 盒</span>` : ''}
-            ${note ? `<span class="chip note">${escapeHtml(note)}</span>` : ''}
+            ${note ? `<span class="note">${escapeHtml(note)}</span>` : ''}
           </span>
         </button>
         <div class="row-side">

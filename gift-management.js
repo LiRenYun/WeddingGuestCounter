@@ -59,6 +59,11 @@ function init() {
   }
   attachEventListeners();
   loadGuestData();
+  // 多台裝置同步：每 20 秒在前景且無寫入中時重新讀取
+  setInterval(() => {
+    const editing = !document.getElementById('edit-view').classList.contains('hidden');
+    if (!document.hidden && busy.size === 0 && !editing) loadGuestData();
+  }, 20000);
 }
 
 // ==================== Data ====================
@@ -127,6 +132,15 @@ const isNoGift = g => {
   const raw = String(g['不收取禮金'] ?? '').trim().toLowerCase();
   return ['是', 'true', '1', 'yes', 'y', 'v', '✓'].includes(raw);
 };
+
+// 本機先算出暫時序號（同陣營最小未用數字），GAS 回應後以伺服器序號為準
+function provisionalCheckinNo(guest) {
+  const side = sideKey(guest);
+  const used = new Set(guestData.filter(g => isCheckedIn(g) && sideKey(g) === side).map(checkinNo));
+  let n = 1;
+  while (used.has(n)) n++;
+  return n;
+}
 
 // 依姓名與陣營找出最後一筆報名資料
 function findLatestRsvp(guest) {
@@ -279,7 +293,7 @@ function renderList() {
     const stamp = checked && key === lastStamped ? ' is-new' : '';
 
     const seal = pending
-      ? `<button class="seal${checked ? ' is-in' : ''}" type="button" disabled aria-busy="true" aria-label="寫入中：${escapeHtml(name)}">…</button>`
+      ? `<button class="seal${checked ? ' is-in' : ''}" type="button" disabled aria-busy="true" aria-label="寫入中：${escapeHtml(name)}">${checked ? `<span class="seal-no">${no || '…'}</span>` : '…'}</button>`
       : checked
         ? `<button class="seal is-in${stamp}" type="button" data-action="checkin" data-index="${i}" aria-pressed="true" aria-label="取消報到：${escapeHtml(name)}，報到序號 ${no}"><span class="seal-no">${no || '…'}</span><span class="seal-no-label">已報到</span></button>`
         : `<button class="seal" type="button" data-action="checkin" data-index="${i}" aria-pressed="false" aria-label="報到：${escapeHtml(name)}"><span>報到</span></button>`;
@@ -326,7 +340,7 @@ async function toggleCheckin(guest) {
   const idx = guestData.findIndex(g => rowKey(g) === key);
   const prev = idx !== -1 ? guestData[idx] : null;
   if (idx !== -1) {
-    guestData[idx] = { ...prev, '已報到': want ? '是' : '', '報到時間': want ? formatTaiwanDateTime(new Date()) : '', '報到序號': '' };
+    guestData[idx] = { ...prev, '已報到': want ? '是' : '', '報到時間': want ? formatTaiwanDateTime(new Date()) : '', '報到序號': want ? provisionalCheckinNo(prev) : '' };
   }
   renderAll();
   setSync('saving', want ? '報到寫入中…' : '取消報到寫入中…');
@@ -334,7 +348,7 @@ async function toggleCheckin(guest) {
   try {
     const res = await postWrite({ formType: 'gift', action: 'checkin', name: guest['姓名'], side: guest['陣營'], checkedIn: want });
     busy.delete(key);
-    if (want && idx !== -1) guestData[idx] = { ...guestData[idx], '報到序號': res.checkinNo };
+    if (want && idx !== -1 && res.checkinNo !== undefined) guestData[idx] = { ...guestData[idx], '報到序號': res.checkinNo };
     renderAll();
     const data = await fetchGift();                       // 寫入後重新讀取，以資料庫為準
     guestData = data.gift;

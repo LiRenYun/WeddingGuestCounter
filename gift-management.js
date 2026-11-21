@@ -349,22 +349,15 @@ async function toggleCheckin(guest) {
     const res = await postWrite({ formType: 'gift', action: 'checkin', name: guest['姓名'], side: guest['陣營'], checkedIn: want });
     busy.delete(key);
     if (want && idx !== -1 && res.checkinNo !== undefined) guestData[idx] = { ...guestData[idx], '報到序號': res.checkinNo };
+    // 寫入成功即顯示提示；核對在背景進行，不阻擋畫面
+    lastStamped = want ? key : null;
     renderAll();
-    const data = await fetchGift();                       // 寫入後重新讀取，以資料庫為準
-    guestData = data.gift;
-    rsvpData = Array.isArray(data.rsvp) ? data.rsvp : rsvpData;
-    seatingData = Array.isArray(data.seating) ? data.seating : seatingData;
-    setSync('ok', `已同步 ${new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })}`);
-
-    const row = findGuest(key);
-    const verified = row && isCheckedIn(row) === want && (!want || checkinNo(row) === Number(res.checkinNo));
-    if (!verified) {
-      showToast('寫入後核對不一致，已重新讀取，請再確認一次', 'error');
+    if (sandboxed(res)) {
+      showToast('沙盒模式：寫入已攔截，線上資料未變更', 'error');
     } else {
-      lastStamped = want ? key : null;
       showToast(want ? `已報到，序號 ${res.checkinNo}` : '已取消報到');
     }
-    if (sandboxed(res)) showToast('沙盒模式：寫入已攔截，線上資料未變更', 'error');
+    verifyCheckin(key, want, res);
   } catch (error) {
     console.error('Checkin error:', error);
     if (idx !== -1) guestData[idx] = prev;   // 還原
@@ -374,6 +367,28 @@ async function toggleCheckin(guest) {
     busy.delete(key);
     renderAll();
     if (currentGuest && rowKey(currentGuest) === key) refreshEditView(key);
+  }
+}
+
+// 背景核對：重新讀取資料庫，確認報到狀態與序號與寫入結果一致
+let verifySeq = 0;
+async function verifyCheckin(key, want, res) {
+  if (sandboxed(res)) return;   // 沙盒不會真的寫入，略過核對
+  const seq = ++verifySeq;
+  try {
+    const data = await fetchGift();
+    if (seq !== verifySeq) return;   // 較新的核對已開始，丟棄較舊的回應
+    guestData = data.gift;
+    rsvpData = Array.isArray(data.rsvp) ? data.rsvp : rsvpData;
+    seatingData = Array.isArray(data.seating) ? data.seating : seatingData;
+    setSync('ok', `已同步 ${new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })}`);
+    const row = findGuest(key);
+    const verified = row && isCheckedIn(row) === want && (!want || checkinNo(row) === Number(res.checkinNo));
+    if (!verified) showToast('寫入後核對不一致，已重新讀取，請再確認一次', 'error');
+    renderAll();
+  } catch (error) {
+    console.error('Verify error:', error);
+    setSync('error', '核對失敗，請重新讀取');
   }
 }
 

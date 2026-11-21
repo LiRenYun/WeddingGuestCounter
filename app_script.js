@@ -24,7 +24,7 @@ function doGet(e) {
       result = { checkin: getSheetDataAsJson(ss, "簽到紀錄") };
     } else if (action === 'gift') {
       // 僅撈取「禮金紀錄」
-      result = { gift: getSheetDataAsJson(ss, "禮金紀錄"), rsvp: getSheetDataAsJson(ss, "報名清單") };
+      result = { gift: getSheetDataAsJson(ss, "禮金紀錄"), rsvp: getSheetDataAsJson(ss, "報名清單"), seating: getSheetDataAsJson(ss, "桌次分配") };
     } else if (action === 'seating') {
       // 僅撈取「桌次分配」
       result = { seating: getSheetDataAsJson(ss, "桌次分配") };
@@ -71,6 +71,7 @@ function doPost(e) {
     var data = JSON.parse(e.postData.contents);
     var timestamp = new Date(); // 使用 new Date() 記錄時間
     var formType = data.formType; // 'rsvp' | 'wish' | 'gift' | 'checkin' | 'seating'
+    var out = { result: "success" }; // 寫入結果，前端據此核對
 
     // ---------------------------------------------------------------------
     // (1) 報名參加 (RSVP)
@@ -121,7 +122,7 @@ function doPost(e) {
       var formattedTime = formatCustomDateTime(timestamp);
 
       // 強制確保標題列正確（避免手動編輯造成欄位錯位）
-      var correctHeaders = ["姓名", "陣營", "金額", "喜餅數量", "備註/合包明細", "更新時間", "不收取禮金", "已報到", "報到時間"];
+      var correctHeaders = ["姓名", "陣營", "金額", "喜餅數量", "備註/合包明細", "更新時間", "不收取禮金", "已報到", "報到時間", "報到序號"];
       if (sheet.getLastRow() === 0) {
         sheet.appendRow(correctHeaders);
       } else {
@@ -145,9 +146,13 @@ function doPost(e) {
       // 判斷是否為更新操作
       if (data.action === 'checkin') {
         // 報到：只改「已報到」「報到時間」兩欄，不影響金額與更新時間；找不到則新增一列
-        var checkedIn = data.checkedIn === true;
-        if (!setGiftCheckin(sheet, data.name, data.side, checkedIn, formattedTime)) {
-          sheet.appendRow([data.name || "", data.side || "", 0, 0, "", "", "", checkedIn ? "是" : "", checkedIn ? formattedTime : ""]);
+        // 加鎖避免兩人同時報到拿到同一個序號
+        var lock = LockService.getScriptLock();
+        lock.waitLock(15000);
+        try {
+          out = setGiftCheckin(sheet, data.name, data.side, data.checkedIn === true, formattedTime);
+        } finally {
+          lock.releaseLock();
         }
       } else if (data.action === 'update') {
         // 依「姓名+陣營」更新金額、喜餅數量、備註、更新時間與不收取禮金；找不到則新增
@@ -295,7 +300,7 @@ function doPost(e) {
       }
     }
 
-    return ContentService.createTextOutput(JSON.stringify({ result: "success" }))
+    return ContentService.createTextOutput(JSON.stringify(out))
       .setMimeType(ContentService.MimeType.JSON);
 
   } catch (error) {
@@ -474,18 +479,50 @@ function updateGiftAmount(sheet, name, side, amount, cakes, note, timestamp, noG
  * 找到回傳 true；找不到回傳 false。
  */
 function setGiftCheckin(sheet, name, side, checkedIn, timestamp) {
+  var key = String(name || "").trim();
+  var group = sideGroup(side);
   var lastRow = sheet.getLastRow();
-  if (lastRow <= 1) return false;
+  var rows = lastRow > 1 ? sheet.getRange(2, 1, lastRow - 1, 10).getValues() : [];
 
-  var rows = sheet.getRange(2, 1, lastRow - 1, 2).getValues();
+  // 同陣營已使用的序號；目前這位賓客所在的列
+  var used = {};
+  var rowIndex = -1;
+  var current = null;
   for (var i = 0; i < rows.length; i++) {
-    if (rows[i][0].toString().trim() === name.toString().trim() &&
-        rows[i][1].toString().trim() === side.toString().trim()) {
-      sheet.getRange(i + 2, 8, 1, 2).setValues([[checkedIn ? "是" : "", checkedIn ? timestamp : ""]]);
-      return true;
+    var r = rows[i];
+    if (r[7] === "是" && sideGroup(r[1]) === group && Number(r[9])) used[Number(r[9])] = true;
+    if (rowIndex === -1 && String(r[0]).trim() === key && String(r[1]).trim() === String(side || "").trim()) {
+      rowIndex = i + 2;
+      current = r;
     }
   }
-  return false;
+
+  var already = current !== null && current[7] === "是" && Number(current[9]) > 0;
+  var no = "";
+  if (checkedIn) {
+    if (already) {
+      no = Number(current[9]);
+    } else {
+      // 取最小未用序號：取消報到後的空號會被遞補，之後接續遞增
+      no = 1;
+      while (used[no]) no++;
+    }
+  }
+
+  if (rowIndex === -1) {
+    if (checkedIn) sheet.appendRow([name, side, 0, 0, "", "", "", "是", timestamp, no]);
+  } else if (checkedIn) {
+    sheet.getRange(rowIndex, 8, 1, 3).setValues([["是", timestamp, no]]);
+  } else {
+    sheet.getRange(rowIndex, 8, 1, 3).setValues([["", "", ""]]);
+  }
+  return { result: "success", checkedIn: checkedIn, checkinNo: checkedIn ? no : "" };
+}
+
+/** 陣營歸類：男方 / 女方 / 其他（報到序號男女分開計算） */
+function sideGroup(side) {
+  var s = String(side || "");
+  return s.indexOf("男方") !== -1 ? "男" : (s.indexOf("女方") !== -1 ? "女" : "");
 }
 
 /**
@@ -501,7 +538,7 @@ function syncToGiftSheet(ss, name, side) {
   if (!name) return;
   var sheet = getOrCreateSheet(ss, "禮金紀錄");
   if (sheet.getLastRow() === 0) {
-    sheet.appendRow(["姓名", "陣營", "金額", "喜餅數量", "備註/合包明細", "更新時間", "不收取禮金", "已報到", "報到時間"]);
+    sheet.appendRow(["姓名", "陣營", "金額", "喜餅數量", "備註/合包明細", "更新時間", "不收取禮金", "已報到", "報到時間", "報到序號"]);
   }
 
   // 檢查是否已存在同名+同陣營的紀錄，避免重複新增

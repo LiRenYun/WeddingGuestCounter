@@ -1,814 +1,536 @@
 // ==================== Configuration ====================
-const API_URL = 'https://script.google.com/macros/s/AKfycbwmHwYw59MPao4n85OaUS8oL3-swQ__oi29lRz6NQnNfzS_p8T9f5zPzrx-mZs6bnP5kg/exec';
-
-// ==================== Text Content ====================
-const text = {
-  loading: '載入中...',
-  empty: '尚無符合條件的賓客資料',
-  error_load: '載入失敗，請重新整理頁面',
-  edit_title: '編輯禮金',
-  add_title: '新增賓客',
-  success_save: '儲存成功！',
-  error_save: '儲存失敗，請重試',
-  error_amount: '請輸入有效金額',
-  error_name: '請輸入姓名',
-  error_side: '請選擇陣營',
-  btn_saving: '儲存中...',
-  btn_save: '確認儲存'
-};
+const API_URL = 'https://script.google.com/macros/s/AKfycbyIeXjikd-dbJJ90ov4RT2FtHTCq2LQnmcp_mlH6JadJxW09_vJshb3f1893xwF8Dd1TA/exec';
 
 // ==================== State ====================
-let guestData = [];
-let rsvpData = [];
+let guestData = [];      // 禮金紀錄
+let rsvpData = [];       // 報名清單
+let seatingData = [];    // 桌次分配（每個座位一列）
 let currentRenderedList = [];
 let currentGuest = null;
-let filterMode = localStorage.getItem('gift_filter_mode') || 'all'; // 'all' | 'groom' | 'bride'
+let viewMode = 'edit';   // 'edit' | 'add'
+let filterMode = localStorage.getItem('gift_filter_mode') || 'all';   // 'all' | 'groom' | 'bride'
+let sortMode = localStorage.getItem('gift_sort_mode') || 'name';
 let searchKeyword = '';
-let viewMode = 'edit'; // 'edit' | 'add'
-let sortMode = localStorage.getItem('gift_sort_mode') || 'name'; // 'name' | 'default' | 'amount-desc' | 'checkin-first' | 'side'
+const busy = new Set();  // 寫入中的賓客 key，避免重複送出
+let lastStamped = null;  // 剛報到的賓客 key，用於印章動畫
 
-// ==================== Initialize ====================
+// ==================== Init ====================
 function init() {
-  // 預設隱藏金額
   document.body.classList.add('amounts-hidden');
-  document.getElementById('eye-icon').textContent = '🙈';
-
-  // 恢復篩選狀態
-  document.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.classList.remove('active');
-    if (btn.dataset.filter === filterMode) {
-      btn.classList.add('active');
-    }
+  document.getElementById('toggle-amounts').setAttribute('aria-pressed', 'false');
+  document.querySelectorAll('.seg').forEach(btn => {
+    const on = btn.dataset.filter === filterMode;
+    btn.setAttribute('aria-selected', String(on));
   });
-
+  document.getElementById('sort-select').value = sortMode;
+  if (window.matchMedia('(max-width: 639px)').matches) {
+    document.getElementById('stats').open = false;
+  }
   attachEventListeners();
-  loadGuestData(true);
+  loadGuestData();
 }
 
-// ==================== Data Functions ====================
-async function loadGuestData(showLoading = false) {
-  const listEl = document.getElementById('guest-list');
-  if (showLoading) {
-    listEl.innerHTML = `
-      <div class="loading-state">
-        <div class="spinner"></div>
-        <p>${text.loading}</p>
-      </div>
-    `;
+// ==================== Data ====================
+async function fetchGift() {
+  // 桌次另外用 ?action=seating 取得：目前線上部署的 gift 回應還沒包含桌次
+  const [giftRes, seatRes] = await Promise.all([
+    fetch(API_URL + '?action=gift'),
+    fetch(API_URL + '?action=seating').catch(() => null)
+  ]);
+  const json = await giftRes.json();
+  if (json.status !== 'success' || !json.data || !Array.isArray(json.data.gift)) {
+    throw new Error('Invalid response format');
   }
+  let seating = Array.isArray(json.data.seating) ? json.data.seating : [];
+  if (seatRes) {
+    try {
+      const s = await seatRes.json();
+      if (s.status === 'success' && Array.isArray(s.data.seating)) seating = s.data.seating;
+    } catch (e) {
+      console.warn('Seating load warning:', e);
+    }
+  }
+  return { ...json.data, seating };
+}
 
+async function loadGuestData() {
+  setSync('saving', '讀取中…');
   try {
-    const [giftRes, rsvpRes] = await Promise.all([
-      fetch(API_URL + '?action=gift'),
-      fetch(API_URL + '?action=rsvp').catch(() => null)
-    ]);
-    const result = await giftRes.json();
-
-    if (rsvpRes) {
-      try {
-        const rsvpResult = await rsvpRes.json();
-        if (rsvpResult.status === 'success' && rsvpResult.data && Array.isArray(rsvpResult.data.rsvp)) {
-          rsvpData = rsvpResult.data.rsvp;
-        }
-      } catch (rsvpErr) {
-        console.warn('RSVP load warning:', rsvpErr);
-      }
-    }
-
-    if (result.status === 'success' && result.data && Array.isArray(result.data.gift)) {
-      if (Array.isArray(result.data.rsvp) && result.data.rsvp.length > 0) {
-        rsvpData = result.data.rsvp;
-      }
-      guestData = result.data.gift;
-      renderCurrentList();
-    } else {
-      throw new Error('Invalid response format');
-    }
+    const data = await fetchGift();
+    guestData = data.gift;
+    rsvpData = Array.isArray(data.rsvp) ? data.rsvp : [];
+    seatingData = Array.isArray(data.seating) ? data.seating : [];
+    setSync('ok', `已同步 ${new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })}`);
   } catch (error) {
     console.error('Load error:', error);
-    if (showLoading || guestData.length === 0) {
-      listEl.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-state-icon">⚠️</div>
-          <p>${text.error_load}</p>
-        </div>
-      `;
-    }
+    setSync('error', '讀取失敗，請重新讀取');
   }
+  renderAll();
 }
 
-// 根據 filterMode 與 searchKeyword 計算過濾後的資料
-function getFilteredAndSearchedData() {
-  let list = guestData;
-
-  // 1. 依陣營篩選
-  if (filterMode === 'groom') {
-    list = list.filter(g => (g['陣營'] || '').includes('男方'));
-  } else if (filterMode === 'bride') {
-    list = list.filter(g => (g['陣營'] || '').includes('女方'));
+// 寫入 GAS：回應必須是 success 才算寫入成功
+async function postWrite(payload) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload)
+  });
+  const json = await res.json();
+  if (json.result !== 'success' && json.status !== 'success') {
+    throw new Error(json.error || 'write failed');
   }
+  return json;
+}
 
-  // 2. 依搜尋字串篩選
-  if (searchKeyword) {
-    const kw = searchKeyword.toLowerCase();
-    list = list.filter(guest => {
-      const name = String(guest['姓名'] || '').toLowerCase();
-      const side = String(guest['陣營'] || '').toLowerCase();
-      const note = String(guest['備註/合包明細'] || '').toLowerCase();
-      const dietLabel = getGuestDietInfo(guest).label.toLowerCase();
-      const noGiftLabel = isNoGift(guest) ? '不收取禮金' : '';
-      return name.includes(kw) || side.includes(kw) || note.includes(kw) || dietLabel.includes(kw) || noGiftLabel.includes(kw);
+const rowKey = g => `${String(g['姓名'] || '').trim()}|${String(g['陣營'] || '').trim()}`;
+const findGuest = key => guestData.find(g => rowKey(g) === key) || null;
+
+// ==================== Guest helpers ====================
+const isCheckedIn = g => String(g['已報到'] ?? '').trim() === '是';
+const checkinNo = g => Number(g['報到序號']) || 0;
+const sideKey = g => {
+  const s = String(g['陣營'] || '');
+  return s.includes('男方') ? 'groom' : (s.includes('女方') ? 'bride' : '');
+};
+const isNoGift = g => {
+  const raw = String(g['不收取禮金'] ?? '').trim().toLowerCase();
+  return ['是', 'true', '1', 'yes', 'y', 'v', '✓'].includes(raw);
+};
+
+// 依姓名與陣營找出最後一筆報名資料
+function findLatestRsvp(guest) {
+  const name = String(guest['姓名'] || '').trim();
+  const side = String(guest['陣營'] || '').trim();
+  if (!name || rsvpData.length === 0) return null;
+
+  let matched = rsvpData.filter(r => String(r['姓名'] || '').trim() === name && String(r['陣營'] || '').trim() === side);
+  if (matched.length === 0 && side) {
+    const isGroom = side.includes('男方');
+    const isBride = side.includes('女方');
+    matched = rsvpData.filter(r => {
+      if (String(r['姓名'] || '').trim() !== name) return false;
+      const rSide = String(r['陣營'] || '');
+      return (isGroom && rSide.includes('男方')) || (isBride && rSide.includes('女方'));
     });
   }
+  if (matched.length === 0) {
+    matched = rsvpData.filter(r => String(r['姓名'] || '').trim() === name);
+  }
+  return matched.length > 0 ? matched[matched.length - 1] : null;
+}
 
+// 報到人數：報名的「參與人數」，無報名資料視為 1 人
+function getGuestPax(guest) {
+  return Math.max(1, Number(findLatestRsvp(guest)?.['參與人數']) || 1);
+}
+
+function getGuestDiet(guest) {
+  const rsvp = findLatestRsvp(guest);
+  const raw = String(rsvp ? (rsvp['葷素選擇'] ?? rsvp['葷素'] ?? rsvp['飲食'] ?? '') : (guest['葷素選擇'] ?? guest['葷素'] ?? guest['飲食'] ?? '')).trim();
+  return { isVeg: hasVegetarian(raw), label: hasVegetarian(raw) ? '素食' : '葷食' };
+}
+
+function hasVegetarian(raw) {
+  if (!raw) return false;
+  const counts = [...raw.matchAll(/素食?\s*[:：]?\s*(\d+)/g)];
+  if (counts.length > 0) return counts.some(m => parseInt(m[1], 10) > 0);
+  return raw.includes('素') || raw.toLowerCase().includes('veg');
+}
+
+// 座位：桌次分配以姓名比對，取第一個座位
+function getSeat(guest) {
+  const name = String(guest['姓名'] || '').trim();
+  const row = seatingData.find(s => String(s['姓名'] || '').trim() === name && String(s['桌號'] ?? '').trim() !== '');
+  if (!row) return null;
+  const table = String(row['桌號']).trim();
+  const seat = String(row['座位編號'] ?? '').trim();
+  return { table, seat, seatNum: Number(seat) || 0 };
+}
+
+function seatLabel(seat) {
+  if (!seat) return '未分配';
+  return /桌$/.test(seat.table) ? seat.table : `${seat.table} 桌`;
+}
+
+// ==================== Filter / sort ====================
+function getFilteredAndSearchedData() {
+  let list = guestData;
+  if (filterMode !== 'all') list = list.filter(g => sideKey(g) === filterMode);
+  if (searchKeyword) {
+    const kw = searchKeyword.toLowerCase();
+    list = list.filter(g => [
+      g['姓名'], g['陣營'], g['備註/合包明細'], getGuestDiet(g).label, isNoGift(g) ? '不收取禮金' : ''
+    ].some(v => String(v || '').toLowerCase().includes(kw)));
+  }
   return sortGuests(list);
 }
 
-// 依排序方式回傳新陣列（不改動 guestData）；預設保留登錄順序
 function sortGuests(list) {
-  const cmpName = (a, b) => String(a['姓名'] || '').localeCompare(String(b['姓名'] || ''), 'zh-Hant');
+  const byName = (a, b) => String(a['姓名'] || '').localeCompare(String(b['姓名'] || ''), 'zh-Hant');
+  const bySide = (a, b) => String(a['陣營'] || '').localeCompare(String(b['陣營'] || ''), 'zh-Hant');
+  const seatOf = g => getSeat(g);
   const comparators = {
-    'name': cmpName,
-    'amount-desc': (a, b) => (Number(b['金額']) || 0) - (Number(a['金額']) || 0) || cmpName(a, b),
-    'checkin-first': (a, b) => Number(isCheckedIn(b)) - Number(isCheckedIn(a)) || cmpName(a, b),
-    'side': (a, b) => String(a['陣營'] || '').localeCompare(String(b['陣營'] || ''), 'zh-Hant') || cmpName(a, b)
+    'name': byName,
+    // 報到順序由小到大；未報到的排在後面
+    'checkin-seq': (a, b) => {
+      const ca = isCheckedIn(a) ? checkinNo(a) : Infinity;
+      const cb = isCheckedIn(b) ? checkinNo(b) : Infinity;
+      return (ca - cb) || byName(a, b);
+    },
+    'seat': (a, b) => {
+      const sa = seatOf(a), sb = seatOf(b);
+      if (!sa || !sb) return (sa ? 0 : 1) - (sb ? 0 : 1) || byName(a, b);
+      return sa.table.localeCompare(sb.table, 'zh-Hant', { numeric: true }) || (sa.seatNum - sb.seatNum) || byName(a, b);
+    },
+    'amount-desc': (a, b) => (Number(b['金額']) || 0) - (Number(a['金額']) || 0) || byName(a, b),
+    'side': (a, b) => bySide(a, b) || byName(a, b)
   };
   const cmp = comparators[sortMode];
   return cmp ? [...list].sort(cmp) : list;
 }
 
-// 判斷賓客是否標記為「不收取禮金」
-function isNoGift(guest) {
-  if (!guest) return false;
-  const raw = guest['不收取禮金'] ?? guest['不收禮金'] ?? '';
-  if (raw === true || raw === 1) return true;
-  const str = String(raw).trim().toLowerCase();
-  return ['是', 'true', '1', 'v', '✓', 'y', 'yes', '不收', '不收取', '不收禮金', '不收取禮金'].includes(str);
+// ==================== Render ====================
+function renderAll() {
+  renderStats();
+  renderList();
 }
 
-// 判斷賓客是否已報到（以「已報到」欄為準，與禮金的「更新時間」無關）
-function isCheckedIn(guest) {
-  return String(guest?.['已報到'] ?? '').trim() === '是';
-}
-
-// 同步編輯畫面上名字後方的「不收取禮金」註記標籤
-function syncNoGiftBadges(checked) {
-  const labelBadge = document.getElementById('edit-label-nogift-badge');
-  const nameBadge = document.getElementById('edit-name-nogift-badge');
-  if (labelBadge) labelBadge.classList.toggle('hidden', !checked);
-  if (nameBadge) nameBadge.classList.toggle('hidden', !checked);
-}
-
-// 判斷報名之葷素選擇字串是否包含素食
-function hasVegetarianDiet(dietRaw) {
-  if (!dietRaw) return false;
-  const str = String(dietRaw).trim();
-  if (!str) return false;
-
-  // 若有「素:數量」或「素食數量」格式（例如 "葷:2,素:0"、"葷:1,素:1"、"葷食3, 素食1"）
-  const vegCountMatches = [...str.matchAll(/素食?\s*[:：]?\s*(\d+)/g)];
-  if (vegCountMatches.length > 0) {
-    return vegCountMatches.some(m => parseInt(m[1], 10) > 0);
-  }
-
-  // 單人或純文字格式（例如 "素食"、"🥗 素食"、"全素"）
-  return str.includes('素') || str.includes('ベジ') || str.toLowerCase().includes('veg');
-}
-
-// 根據賓客姓名與陣營從報名清單 (rsvpData) 找出最後一筆報名資料；找不到回傳 null
-function findLatestRsvp(guest) {
-  const name = String(guest['姓名'] || '').trim();
-  const side = String(guest['陣營'] || '').trim();
-
-  let matchedRsvp = [];
-  if (name && Array.isArray(rsvpData) && rsvpData.length > 0) {
-    // 1. 優先比對「姓名 + 完整陣營」
-    matchedRsvp = rsvpData.filter(r =>
-      String(r['姓名'] || '').trim() === name &&
-      String(r['陣營'] || '').trim() === side
-    );
-
-    // 2. 若無，比對「姓名 + 男/女方關鍵字」
-    if (matchedRsvp.length === 0 && side) {
-      const isGroom = side.includes('男方');
-      const isBride = side.includes('女方');
-      matchedRsvp = rsvpData.filter(r => {
-        if (String(r['姓名'] || '').trim() !== name) return false;
-        const rSide = String(r['陣營'] || '');
-        return (isGroom && rSide.includes('男方')) || (isBride && rSide.includes('女方'));
-      });
-    }
-
-    // 3. 若仍無，直接比對「姓名」
-    if (matchedRsvp.length === 0) {
-      matchedRsvp = rsvpData.filter(r => String(r['姓名'] || '').trim() === name);
-    }
-  }
-
-  return matchedRsvp.length > 0 ? matchedRsvp[matchedRsvp.length - 1] : null;
-}
-
-// 報到人數：取報名的「參與人數」，無報名資料時視為 1 人
-function getGuestPax(guest) {
-  const rsvp = findLatestRsvp(guest);
-  return Math.max(1, Number(rsvp?.['參與人數']) || 1);
-}
-
-// 根據賓客姓名與陣營從報名清單 (rsvpData) 取得葷素標記（有素食標記「素食」，無素食標記「葷食」）
-function getGuestDietInfo(guest) {
-  const latestRsvp = findLatestRsvp(guest);
-  const dietRaw = latestRsvp
-    ? (latestRsvp['葷素選擇'] ?? latestRsvp['葷素'] ?? latestRsvp['飲食'] ?? '')
-    : (guest['葷素選擇'] ?? guest['葷素'] ?? guest['飲食'] ?? '');
-
-  const isVeg = hasVegetarianDiet(dietRaw);
-  return {
-    isVeg,
-    label: isVeg ? '素食' : '葷食',
-    raw: String(dietRaw || '').trim()
-  };
-}
-
-// 更新頂部儀表板統計數字
-function updateStats() {
-  // 人數以報名的「參與人數」計算；一筆禮金可能代表多人
-  let totalAmount = 0;
-  let totalCakes = 0;
-  let totalPeople = 0;
-  let checkedPeople = 0;
-  let groomTotal = 0;
-  let groomPaid = 0;
-  let brideTotal = 0;
-  let bridePaid = 0;
-
+function renderStats() {
+  let totalAmount = 0, totalCakes = 0, totalPeople = 0, checkedPeople = 0;
+  let groomTotal = 0, groomPaid = 0, brideTotal = 0, bridePaid = 0;
   guestData.forEach(g => {
     const pax = getGuestPax(g);
-    const checkedIn = isCheckedIn(g);
+    const checked = isCheckedIn(g);
     totalAmount += Number(g['金額']) || 0;
     totalCakes += Number(g['喜餅數量']) || 0;
     totalPeople += pax;
-    if (checkedIn) checkedPeople += pax;
-
-    const side = String(g['陣營'] || '');
-    if (side.includes('男方')) {
-      groomTotal += pax;
-      if (checkedIn) groomPaid += pax;
-    }
-    if (side.includes('女方')) {
-      brideTotal += pax;
-      if (checkedIn) bridePaid += pax;
-    }
+    if (checked) checkedPeople += pax;
+    const side = sideKey(g);
+    if (side === 'groom') { groomTotal += pax; if (checked) groomPaid += pax; }
+    if (side === 'bride') { brideTotal += pax; if (checked) bridePaid += pax; }
   });
-
-  const setHtml = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
-  setHtml('stat-total-guests', `${checkedPeople} / ${totalPeople} <span class="stat-subtext">人</span>`);
-  setHtml('stat-groom-count', `${groomPaid} / ${groomTotal} <span class="stat-subtext">人</span>`);
-  setHtml('stat-bride-count', `${bridePaid} / ${brideTotal} <span class="stat-subtext">人</span>`);
-  setHtml('stat-total-cakes', `${totalCakes} <span class="stat-subtext">盒</span>`);
-  const amountEl = document.getElementById('stat-total-amount');
-  if (amountEl) amountEl.textContent = '$' + totalAmount.toLocaleString();
+  document.getElementById('stat-total-guests').textContent = `${checkedPeople} / ${totalPeople}`;
+  document.getElementById('stat-groom-count').textContent = `${groomPaid} / ${groomTotal}`;
+  document.getElementById('stat-bride-count').textContent = `${bridePaid} / ${brideTotal}`;
+  document.getElementById('stat-total-cakes').innerHTML = `${totalCakes}<small>盒</small>`;
+  document.getElementById('stat-total-amount').textContent = '$' + totalAmount.toLocaleString();
 }
 
-// 統一渲染入口：保證依目前 filter 和搜尋呈現清單
-function renderCurrentList() {
-  updateStats();
+function renderList() {
   const listEl = document.getElementById('guest-list');
   currentRenderedList = getFilteredAndSearchedData();
 
-  if (!currentRenderedList || currentRenderedList.length === 0) {
-    listEl.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-state-icon">💌</div>
-        <p>${text.empty}</p>
-      </div>
-    `;
+  if (guestData.length === 0) {
+    listEl.innerHTML = '<li class="empty">尚無賓客資料。按「新增賓客」或由報名資料建立。</li>';
+    return;
+  }
+  if (currentRenderedList.length === 0) {
+    listEl.innerHTML = '<li class="empty">沒有符合條件的賓客</li>';
     return;
   }
 
-  listEl.innerHTML = currentRenderedList.map((guest, index) => {
-    const amount = Number(guest['金額']) || 0;
-    const isPaid = amount > 0;
-    const amountPaidClass = isPaid ? 'paid' : '';
-    const checkedIn = isCheckedIn(guest);
-    const checkinTime = String(guest['報到時間'] || '').trim();
-    const namePaidClass = checkedIn ? 'paid' : '';
-    const name = String(guest['姓名'] || '').trim();
-    const side = String(guest['陣營'] || '').trim();
-    const isGroom = side.includes('男方');
-    const avatarType = isGroom ? 'groom' : 'bride';
-    const sideBadgeType = isGroom ? 'groom' : 'bride';
-    const initial = name ? name.charAt(0) : '客';
+  listEl.innerHTML = currentRenderedList.map((g, i) => {
+    const key = rowKey(g);
+    const checked = isCheckedIn(g);
+    const pending = busy.has(key);
+    const no = checkinNo(g);
+    const side = sideKey(g);
+    const name = String(g['姓名'] || '').trim();
+    const sideText = String(g['陣營'] || '').trim() || '親友';
+    const diet = getGuestDiet(g);
+    const seat = getSeat(g);
+    const cakes = Number(g['喜餅數量']) || 0;
+    const note = String(g['備註/合包明細'] || '').trim();
+    const amount = Number(g['金額']) || 0;
+    const checkinAt = String(g['報到時間'] || '').trim();
+    const stamp = checked && key === lastStamped ? ' is-new' : '';
 
-    const cakes = Number(guest['喜餅數量']) || 0;
-    const note = String(guest['備註/合包明細'] || '').trim();
-    const formattedTime = checkinTime ? formatTaiwanDateTime(checkinTime) : '';
-    const dietInfo = getGuestDietInfo(guest);
-    const dietBadgeType = dietInfo.isVeg ? 'veg' : 'meat';
-    const noGift = isNoGift(guest);
+    const seal = pending
+      ? `<button class="seal${checked ? ' is-in' : ''}" type="button" disabled aria-busy="true" aria-label="寫入中：${escapeHtml(name)}">…</button>`
+      : checked
+        ? `<button class="seal is-in${stamp}" type="button" data-action="checkin" data-index="${i}" aria-pressed="true" aria-label="取消報到：${escapeHtml(name)}，報到序號 ${no}"><span class="seal-no">${no || '—'}</span><span class="seal-no-label">已報到</span></button>`
+        : `<button class="seal" type="button" data-action="checkin" data-index="${i}" aria-pressed="false" aria-label="報到：${escapeHtml(name)}"><span>報到</span></button>`;
 
     return `
-      <div class="guest-item" data-index="${index}">
-        <div class="guest-item-main">
-          <div class="guest-avatar ${avatarType}">${escapeHtml(initial)}</div>
-          <div class="guest-details">
-            <div class="guest-name-row">
-              <span class="guest-name ${namePaidClass}">${escapeHtml(name)}</span>
-              ${noGift ? '<span class="guest-nogift-badge">🚫 不收取禮金</span>' : ''}
-              <span class="guest-side-badge ${sideBadgeType}">${escapeHtml(side || '親友')}</span>
-              <span class="guest-diet-badge ${dietBadgeType}"${dietInfo.raw ? ` title="報名選擇：${escapeHtml(dietInfo.raw)}"` : ''}>${dietInfo.label}</span>
-            </div>
-            <div class="guest-meta-row">
-              ${cakes > 0 ? `<span class="guest-tag cake">🎁 喜餅 ${cakes} 盒</span>` : ''}
-              ${note ? `<span class="guest-tag" title="${escapeHtml(note)}">📝 ${escapeHtml(note)}</span>` : ''}
-              ${formattedTime ? `<span class="guest-tag time">✅ 報到 ${escapeHtml(formattedTime)}</span>` : ''}
-            </div>
-          </div>
+      <li class="row" data-side="${side}">
+        ${seal}
+        <button class="row-main" type="button" data-action="open" data-index="${i}">
+          <span class="name-line">
+            <span class="name">${escapeHtml(name)}</span>
+            <span class="side-tag ${side}">${escapeHtml(sideText)}</span>
+            <span class="diet">${diet.label}</span>
+            ${isNoGift(g) ? '<span class="diet">不收取禮金</span>' : ''}
+          </span>
+          <span class="meta">
+            <span class="chip seat${seat ? '' : ' unassigned'}">${escapeHtml(seatLabel(seat))}</span>
+            ${cakes > 0 ? `<span class="chip cake">喜餅 ${cakes} 盒</span>` : ''}
+            ${note ? `<span class="chip note">${escapeHtml(note)}</span>` : ''}
+          </span>
+        </button>
+        <div class="row-side">
+          <span class="row-amount money${amount > 0 ? ' has' : ''}">$${amount.toLocaleString()}</span>
+          ${checkinAt ? `<div class="row-time">${escapeHtml(formatTaiwanDateTime(checkinAt))}</div>` : ''}
         </div>
-        <div class="guest-amount-wrap">
-          <div class="guest-amount-val ${amountPaidClass}">$${amount.toLocaleString()}</div>
-        </div>
-      </div>
-    `;
+      </li>`;
   }).join('');
 
-  attachGuestItemListeners();
+  lastStamped = null;
 }
 
-function attachGuestItemListeners() {
-  document.querySelectorAll('.guest-item').forEach(item => {
-    item.addEventListener('click', () => {
-      const index = parseInt(item.dataset.index, 10);
-      const guest = currentRenderedList[index];
-      if (guest) {
-        openEditView(guest);
-      }
-    });
-  });
+function setSync(state, text) {
+  const el = document.getElementById('sync-status');
+  el.dataset.state = state;
+  document.getElementById('sync-text').textContent = text;
 }
 
-// ==================== Filter ====================
-function setFilter(mode) {
-  filterMode = mode;
-  localStorage.setItem('gift_filter_mode', mode); // 記住篩選狀態
-  document.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.classList.remove('active');
-    if (btn.dataset.filter === mode) {
-      btn.classList.add('active');
+// ==================== Check-in ====================
+async function toggleCheckin(guest) {
+  const key = rowKey(guest);
+  if (busy.has(key)) return;
+  const want = !isCheckedIn(guest);
+  busy.add(key);
+  setSync('saving', want ? '報到寫入中…' : '取消報到寫入中…');
+  renderList();
+
+  try {
+    const res = await postWrite({ formType: 'gift', action: 'checkin', name: guest['姓名'], side: guest['陣營'], checkedIn: want });
+    const data = await fetchGift();                       // 寫入後重新讀取，以資料庫為準
+    guestData = data.gift;
+    rsvpData = Array.isArray(data.rsvp) ? data.rsvp : rsvpData;
+    seatingData = Array.isArray(data.seating) ? data.seating : seatingData;
+    setSync('ok', `已同步 ${new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })}`);
+
+    const row = findGuest(key);
+    const verified = row && isCheckedIn(row) === want && (!want || checkinNo(row) === Number(res.checkinNo));
+    if (!verified) {
+      showToast('寫入後核對不一致，已重新讀取，請再確認一次', 'error');
+    } else {
+      lastStamped = want ? key : null;
+      showToast(want ? `已報到，序號 ${res.checkinNo}` : '已取消報到');
     }
-  });
-  renderCurrentList();
-}
-
-// ==================== Search ====================
-function handleSearch(e) {
-  searchKeyword = e.target.value.trim();
-  const clearBtn = document.getElementById('clear-search');
-  if (clearBtn) {
-    clearBtn.style.display = searchKeyword ? 'flex' : 'none';
-  }
-  renderCurrentList();
-}
-
-function clearSearch() {
-  const input = document.getElementById('search-input');
-  if (input) {
-    input.value = '';
-  }
-  searchKeyword = '';
-  const clearBtn = document.getElementById('clear-search');
-  if (clearBtn) clearBtn.style.display = 'none';
-  renderCurrentList();
-}
-
-// ==================== Toggle Amounts ====================
-function toggleAmounts() {
-  const eyeIcon = document.getElementById('eye-icon');
-  const isHidden = document.body.classList.contains('amounts-hidden');
-
-  if (isHidden) {
-    document.body.classList.remove('amounts-hidden');
-    eyeIcon.textContent = '👁️';
-  } else {
-    document.body.classList.add('amounts-hidden');
-    eyeIcon.textContent = '🙈';
+    if (sandboxed(res)) showToast('沙盒模式：寫入已攔截，線上資料未變更', 'error');
+  } catch (error) {
+    console.error('Checkin error:', error);
+    setSync('error', '寫入失敗，資料未變更');
+    showToast('寫入失敗，資料未變更，請確認網路後重試', 'error');
+  } finally {
+    busy.delete(key);
+    renderAll();
+    if (currentGuest && rowKey(currentGuest) === key) refreshEditView(key);
   }
 }
 
-// ==================== Edit View ====================
+const sandboxed = res => Boolean(res && res.sandbox);
+
+// ==================== Edit / add view ====================
 function openEditView(guest) {
   viewMode = 'edit';
   currentGuest = guest;
-
-  const titleEl = document.getElementById('view-title');
-  const timeWrapEl = document.getElementById('view-update-time');
-  const timeTextEl = document.getElementById('update-time-text');
-
-  titleEl.textContent = text.edit_title;
-
-  // 檢查是否有更新時間
-  const updateTime = guest['更新時間'] || '';
-  if (updateTime) {
-    const formattedTime = formatTaiwanDateTime(updateTime);
-    timeTextEl.textContent = `最後更新：${formattedTime}`;
-    timeWrapEl.classList.remove('hidden');
-  } else {
-    timeWrapEl.classList.add('hidden');
-  }
-
-  // 報到按鈕（僅編輯既有賓客時顯示）
-  document.getElementById('btn-checkin').classList.remove('hidden');
-  updateCheckinButton();
-
-  // 姓名 (唯讀)
-  const nameInput = document.getElementById('edit-name');
-  nameInput.value = guest['姓名'] || '';
-  nameInput.readOnly = true;
-
-  // 不收取禮金註記（顯示在名字後方，不鎖定填寫功能）
-  const noGift = isNoGift(guest);
-  const noGiftCheckbox = document.getElementById('edit-nogift');
-  if (noGiftCheckbox) noGiftCheckbox.checked = noGift;
-  syncNoGiftBadges(noGift);
-
-  // 陣營 (唯讀)
-  const sideInput = document.getElementById('edit-side');
-  const sideSelect = document.getElementById('edit-side-select');
-  sideInput.value = guest['陣營'] || '';
-  sideInput.readOnly = true;
-  sideInput.style.display = 'block';
-  sideSelect.style.display = 'none';
-
-  // 金額、喜餅、備註
+  document.getElementById('view-title').textContent = '編輯禮金';
+  document.getElementById('edit-name').value = guest['姓名'] || '';
+  document.getElementById('edit-name').readOnly = true;
+  document.getElementById('edit-side').value = guest['陣營'] || '';
+  document.getElementById('edit-side').classList.remove('hidden');
+  document.getElementById('edit-side-select').classList.add('hidden');
+  document.getElementById('edit-nogift').checked = isNoGift(guest);
   document.getElementById('edit-amount').value = Number(guest['金額']) || 0;
   document.getElementById('edit-cakes').value = Number(guest['喜餅數量']) || 0;
   document.getElementById('edit-note').value = guest['備註/合包明細'] || '';
-
-  document.getElementById('list-view').classList.add('hidden');
-  document.getElementById('edit-view').classList.remove('hidden');
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  const upd = document.getElementById('view-update-time');
+  const updated = String(guest['更新時間'] || '').trim();
+  upd.textContent = updated ? `最後更新：${formatTaiwanDateTime(updated)}` : '';
+  upd.classList.toggle('hidden', !updated);
+  document.getElementById('btn-checkin').classList.remove('hidden');
+  refreshEditView(rowKey(guest));
+  showEditView();
 }
 
 function openAddView() {
   viewMode = 'add';
   currentGuest = null;
-
-  document.getElementById('view-title').textContent = text.add_title;
-  document.getElementById('view-update-time').classList.add('hidden');
-  document.getElementById('btn-checkin').classList.add('hidden');
-
-  // 姓名 (可輸入)
-  const nameInput = document.getElementById('edit-name');
-  nameInput.value = '';
-  nameInput.readOnly = false;
-
-  // 不收取禮金預設未勾選
-  const noGiftCheckbox = document.getElementById('edit-nogift');
-  if (noGiftCheckbox) noGiftCheckbox.checked = false;
-  syncNoGiftBadges(false);
-
-  // 陣營 (下拉選單)
-  const sideInput = document.getElementById('edit-side');
-  const sideSelect = document.getElementById('edit-side-select');
-  sideInput.style.display = 'none';
-  sideSelect.style.display = 'block';
-  // 預設選取當前 filter 陣營
-  if (filterMode === 'groom') {
-    sideSelect.value = '男方親友';
-  } else if (filterMode === 'bride') {
-    sideSelect.value = '女方親友';
-  } else {
-    sideSelect.value = '';
-  }
-
+  document.getElementById('view-title').textContent = '新增賓客';
+  document.getElementById('edit-name').value = '';
+  document.getElementById('edit-name').readOnly = false;
+  document.getElementById('edit-side').classList.add('hidden');
+  document.getElementById('edit-side-select').classList.remove('hidden');
+  document.getElementById('edit-side-select').value = filterMode === 'groom' ? '男方親友' : (filterMode === 'bride' ? '女方親友' : '');
+  document.getElementById('edit-nogift').checked = false;
   document.getElementById('edit-amount').value = 0;
   document.getElementById('edit-cakes').value = 0;
   document.getElementById('edit-note').value = '';
+  document.getElementById('view-update-time').classList.add('hidden');
+  document.getElementById('btn-checkin').classList.add('hidden');
+  showEditView();
+  document.getElementById('edit-name').focus();
+}
 
+function refreshEditView(key) {
+  const latest = findGuest(key);
+  if (latest) currentGuest = latest;
+  const btn = document.getElementById('btn-checkin');
+  const checked = Boolean(currentGuest) && isCheckedIn(currentGuest);
+  btn.textContent = busy.has(key) ? '寫入中…' : (checked ? `取消報到（序號 ${checkinNo(currentGuest)}）` : '確認報到');
+  btn.disabled = busy.has(key);
+}
+
+function showEditView() {
   document.getElementById('list-view').classList.add('hidden');
   document.getElementById('edit-view').classList.remove('hidden');
   window.scrollTo({ top: 0, behavior: 'smooth' });
-  nameInput.focus();
 }
 
 function closeEditView() {
   currentGuest = null;
   document.getElementById('edit-view').classList.add('hidden');
   document.getElementById('list-view').classList.remove('hidden');
-  // 返回清單時保證按當前 filter 重新渲染
-  renderCurrentList();
+  renderList();
 }
 
-// 快捷金額按鈕處理
-function handleQuickAmount(e) {
-  const btn = e.target.closest('.btn-quick-amount');
-  if (!btn) return;
-
-  const amountInput = document.getElementById('edit-amount');
-  let currentVal = Number(amountInput.value) || 0;
-
-  if (btn.dataset.add) {
-    const addVal = Number(btn.dataset.add);
-    amountInput.value = Math.max(0, currentVal + addVal);
-  } else if (btn.dataset.set !== undefined) {
-    const setVal = Number(btn.dataset.set);
-    amountInput.value = setVal;
-  }
-}
-
-// 快捷喜餅按鈕處理 (+1 與 歸 0)
-function handleQuickCake(e) {
-  const btn = e.target.closest('.btn-quick-cake');
-  if (!btn) return;
-
-  const cakeInput = document.getElementById('edit-cakes');
-  let currentVal = Number(cakeInput.value) || 0;
-
-  if (btn.dataset.cakeAdd !== undefined) {
-    const addVal = Number(btn.dataset.cakeAdd);
-    cakeInput.value = Math.max(0, currentVal + addVal);
-  } else if (btn.dataset.cakeSet !== undefined) {
-    cakeInput.value = Number(btn.dataset.cakeSet);
-  }
-}
-
-// 統計看板收合/展開切換
-function toggleStatsDashboard() {
-  const dashboard = document.getElementById('stat-dashboard');
-  const btn = document.getElementById('toggle-stats-btn');
-  if (!dashboard || !btn) return;
-
-  const isCollapsed = dashboard.classList.contains('collapsed');
-  if (isCollapsed) {
-    dashboard.classList.remove('collapsed');
-    btn.setAttribute('aria-expanded', 'true');
-    btn.textContent = '📊 收合統計看板 ▴';
-  } else {
-    dashboard.classList.add('collapsed');
-    btn.setAttribute('aria-expanded', 'false');
-    btn.textContent = '📊 報到統計看板 ▾';
-  }
-}
-
-// 報到按鈕文字與樣式依目前狀態切換
-function updateCheckinButton() {
-  const btn = document.getElementById('btn-checkin');
-  const checked = Boolean(currentGuest) && isCheckedIn(currentGuest);
-  btn.textContent = checked ? '↩ 取消報到' : '✅ 確認報到';
-  btn.classList.toggle('is-checked', checked);
-}
-
-// 報到／取消報到：立即寫入，不需要按「確認儲存」
-async function handleCheckin() {
-  if (!currentGuest) return;
-  const name = String(currentGuest['姓名']).trim();
-  const side = String(currentGuest['陣營']).trim();
-  const checkedIn = !isCheckedIn(currentGuest);
-  const now = formatTaiwanDateTime(new Date());
-
-  // 樂觀更新：先改本地資料與畫面
-  const idx = guestData.findIndex(g => String(g['姓名']).trim() === name && String(g['陣營']).trim() === side);
-  if (idx !== -1) {
-    guestData[idx] = { ...guestData[idx], '已報到': checkedIn ? '是' : '', '報到時間': checkedIn ? now : '' };
-    currentGuest = guestData[idx];
-  }
-  renderCurrentList();
-  updateCheckinButton();
-  showToast(checkedIn ? '已報到' : '已取消報到', 'success');
-
-  try {
-    await fetch(API_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ formType: 'gift', action: 'checkin', name, side, checkedIn })
-    });
-    setTimeout(() => {
-      loadGuestData(false);
-    }, 1500);
-  } catch (error) {
-    console.error('Checkin sync error:', error);
-    showToast(text.error_save, 'error');
-  }
-}
-
-// 儲存邏輯
 async function handleSave(e) {
   e.preventDefault();
-
   const name = document.getElementById('edit-name').value.trim();
-  let side = '';
-
-  if (viewMode === 'edit') {
-    side = document.getElementById('edit-side').value.trim();
-  } else {
-    side = document.getElementById('edit-side-select').value.trim();
-  }
-
+  const side = viewMode === 'edit'
+    ? document.getElementById('edit-side').value.trim()
+    : document.getElementById('edit-side-select').value.trim();
   const amountStr = document.getElementById('edit-amount').value;
   const cakes = Number(document.getElementById('edit-cakes').value) || 0;
   const note = document.getElementById('edit-note').value.trim();
-  const noGift = Boolean(document.getElementById('edit-nogift')?.checked);
-  const noGiftVal = noGift ? '是' : '';
+  const noGift = document.getElementById('edit-nogift').checked;
 
-  // 驗證
-  if (!name) {
-    showToast(text.error_name, 'error');
-    return;
-  }
-  if (!side) {
-    showToast(text.error_side, 'error');
-    return;
-  }
-  if (amountStr === '' || isNaN(amountStr) || Number(amountStr) < 0) {
-    showToast(text.error_amount, 'error');
-    return;
-  }
-
+  if (!name) return showToast('請輸入姓名', 'error');
+  if (!side) return showToast('請選擇陣營', 'error');
+  if (amountStr === '' || isNaN(amountStr) || Number(amountStr) < 0) return showToast('請輸入有效金額', 'error');
   const amount = Number(amountStr);
-  const nowFormatted = formatTaiwanDateTime(new Date());
 
-  const saveBtn = document.getElementById('save-btn');
-  const originalText = saveBtn.textContent;
-  saveBtn.disabled = true;
-  saveBtn.textContent = text.btn_saving;
-
-  // 樂觀更新 (Optimistic Update)：先更新本地 guestData
-  if (viewMode === 'edit') {
-    const existingIndex = guestData.findIndex(g => 
-      String(g['姓名']).trim() === name && String(g['陣營']).trim() === side
-    );
-    if (existingIndex !== -1) {
-      guestData[existingIndex] = {
-        ...guestData[existingIndex],
-        '金額': amount,
-        '喜餅數量': cakes,
-        '備註/合包明細': note,
-        '更新時間': nowFormatted,
-        '不收取禮金': noGiftVal
-      };
-    }
-  } else {
-    // 新增模式：加入 guestData 最前面
-    const newGuest = {
-      '姓名': name,
-      '陣營': side,
-      '金額': amount,
-      '喜餅數量': cakes,
-      '備註/合包明細': note,
-      '更新時間': nowFormatted,
-      '不收取禮金': noGiftVal
-    };
-    // 檢查是否已有相同姓名陣營
-    const existIdx = guestData.findIndex(g => 
-      String(g['姓名']).trim() === name && String(g['陣營']).trim() === side
-    );
-    if (existIdx !== -1) {
-      guestData[existIdx] = newGuest;
-    } else {
-      guestData.unshift(newGuest);
-    }
-  }
-
-  // 立即重繪畫面並關閉編輯頁
-  renderCurrentList();
-  showToast(text.success_save, 'success');
-  closeEditView();
-
+  const btn = document.getElementById('save-btn');
+  btn.disabled = true;
+  btn.textContent = '儲存中…';
+  setSync('saving', '儲存寫入中…');
   try {
-    const payload = {
-      formType: 'gift',
-      action: 'update',
-      name: name,
-      side: side,
-      amount: amount,
-      cakes: cakes,
-      note: note,
-      noGift: noGift
-    };
-
-    await fetch(API_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify(payload)
-    });
-
-    // 背景靜態再同步一次資料
-    setTimeout(() => {
-      loadGuestData(false);
-    }, 1500);
-
+    await postWrite({ formType: 'gift', action: 'update', name, side, amount, cakes, note, noGift });
+    const data = await fetchGift();
+    guestData = data.gift;
+    rsvpData = Array.isArray(data.rsvp) ? data.rsvp : rsvpData;
+    seatingData = Array.isArray(data.seating) ? data.seating : seatingData;
+    setSync('ok', `已同步 ${new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })}`);
+    const row = findGuest(`${name}|${side}`);
+    const verified = row && Number(row['金額']) === amount && (Number(row['喜餅數量']) || 0) === cakes;
+    if (verified) {
+      showToast('儲存成功');
+      closeEditView();
+    } else {
+      showToast('儲存後核對不一致，請確認後再儲存', 'error');
+    }
   } catch (error) {
-    console.error('Save sync error:', error);
-    // 即使背景同步失敗，本地已儲存，提示一次
+    console.error('Save error:', error);
+    setSync('error', '儲存失敗，資料未變更');
+    showToast('儲存失敗，資料未變更，請重試', 'error');
   } finally {
-    saveBtn.disabled = false;
-    saveBtn.textContent = originalText;
+    btn.disabled = false;
+    btn.textContent = '確認儲存';
+    renderAll();
   }
 }
 
 // ==================== Toast ====================
-function showToast(message, type = 'success') {
-  const existingToasts = document.querySelectorAll('.toast');
-  existingToasts.forEach(t => t.remove());
-
-  const toast = document.createElement('div');
-  toast.className = `toast ${type}`;
-  const icon = type === 'success' ? '✅' : '⚠️';
-  toast.innerHTML = `
-    <span>${icon}</span>
-    <span>${message}</span>
-  `;
-
-  document.body.appendChild(toast);
-
-  setTimeout(() => {
-    toast.style.animation = 'slideIn 0.3s reverse';
-    setTimeout(() => toast.remove(), 300);
-  }, 2600);
+let toastTimer = null;
+function showToast(message, type = 'ok') {
+  const el = document.getElementById('toast');
+  el.textContent = message;
+  el.classList.toggle('is-error', type === 'error');
+  el.classList.remove('hidden');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.add('hidden'), type === 'error' ? 4200 : 2600);
 }
 
-// ==================== Event Listeners ====================
+// ==================== Events ====================
 function attachEventListeners() {
-  document.getElementById('search-input').addEventListener('input', handleSearch);
-  const clearBtn = document.getElementById('clear-search');
-  if (clearBtn) clearBtn.addEventListener('click', clearSearch);
-
-  document.getElementById('toggle-amounts').addEventListener('click', toggleAmounts);
-  document.getElementById('cancel-btn').addEventListener('click', closeEditView);
-  document.getElementById('btn-back').addEventListener('click', closeEditView);
-  document.getElementById('edit-form').addEventListener('submit', handleSave);
-  document.getElementById('btn-add').addEventListener('click', openAddView);
-  document.getElementById('btn-checkin').addEventListener('click', handleCheckin);
-
-  // Quick preset amount buttons
-  document.querySelector('.quick-amounts')?.addEventListener('click', handleQuickAmount);
-
-  // Quick cake buttons
-  document.querySelector('.quick-cake-actions')?.addEventListener('click', handleQuickCake);
-
-  // Toggle stats dashboard
-  document.getElementById('toggle-stats-btn')?.addEventListener('click', toggleStatsDashboard);
-
-  // Toggle no-gift badge in edit view
-  document.getElementById('edit-nogift')?.addEventListener('change', (e) => {
-    syncNoGiftBadges(e.target.checked);
+  document.getElementById('guest-list').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    const guest = currentRenderedList[Number(btn.dataset.index)];
+    if (!guest) return;
+    if (btn.dataset.action === 'checkin') toggleCheckin(guest);
+    if (btn.dataset.action === 'open') openEditView(guest);
   });
 
-  // Filter tabs
-  document.querySelectorAll('.filter-btn[data-filter]').forEach(btn => {
-    btn.addEventListener('click', () => setFilter(btn.dataset.filter));
+  document.getElementById('btn-checkin').addEventListener('click', () => {
+    if (currentGuest) toggleCheckin(currentGuest);
   });
 
-  // Sort dropdown (記住上次選擇)
-  const sortSelect = document.getElementById('sort-select');
-  sortSelect.value = sortMode;
-  sortSelect.addEventListener('change', (e) => {
+  document.querySelectorAll('.seg').forEach(btn => {
+    btn.addEventListener('click', () => {
+      filterMode = btn.dataset.filter;
+      localStorage.setItem('gift_filter_mode', filterMode);
+      document.querySelectorAll('.seg').forEach(b => b.setAttribute('aria-selected', String(b === btn)));
+      renderList();
+    });
+  });
+
+  document.getElementById('search-input').addEventListener('input', (e) => {
+    searchKeyword = e.target.value.trim();
+    renderList();
+  });
+
+  document.getElementById('sort-select').addEventListener('change', (e) => {
     sortMode = e.target.value;
     localStorage.setItem('gift_sort_mode', sortMode);
-    renderCurrentList();
+    renderList();
+  });
+
+  document.getElementById('toggle-amounts').addEventListener('click', (e) => {
+    const hidden = document.body.classList.toggle('amounts-hidden');
+    e.currentTarget.setAttribute('aria-pressed', String(!hidden));
+  });
+
+  document.getElementById('btn-resync').addEventListener('click', loadGuestData);
+  document.getElementById('btn-add').addEventListener('click', openAddView);
+  document.getElementById('btn-back').addEventListener('click', closeEditView);
+  document.getElementById('cancel-btn').addEventListener('click', closeEditView);
+  document.getElementById('edit-form').addEventListener('submit', handleSave);
+
+  document.getElementById('amount-presets').addEventListener('click', (e) => {
+    const btn = e.target.closest('.preset');
+    if (!btn) return;
+    const input = document.getElementById('edit-amount');
+    if (btn.dataset.add !== undefined) input.value = Math.max(0, (Number(input.value) || 0) + Number(btn.dataset.add));
+    if (btn.dataset.set !== undefined) input.value = Number(btn.dataset.set);
+  });
+  document.getElementById('cake-add').addEventListener('click', () => {
+    const input = document.getElementById('edit-cakes');
+    input.value = (Number(input.value) || 0) + 1;
+  });
+  document.getElementById('cake-zero').addEventListener('click', () => {
+    document.getElementById('edit-cakes').value = 0;
+  });
+
+  // 切回頁面時重新讀取，避免其他裝置的修改沒有反映
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && busy.size === 0 && document.getElementById('edit-view').classList.contains('hidden')) {
+      loadGuestData();
+    }
   });
 }
 
 // ==================== Utility ====================
 function escapeHtml(text) {
-  if (!text) return '';
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
+  return String(text ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
-/**
- * 格式化時間為「YYYY/M/D 上午/下午 h:mm:ss」
- * 例如：2026/8/25 上午 9:18:53
- */
+// 格式化為「YYYY/M/D 上午/下午 h:mm:ss」
 function formatTaiwanDateTime(timeValue) {
   if (!timeValue) return '';
-  try {
-    // 若已經是這種格式字串直接返回
-    if (typeof timeValue === 'string' && (timeValue.includes('上午') || timeValue.includes('下午'))) {
-      return timeValue;
-    }
-    const d = new Date(timeValue);
-    if (isNaN(d.getTime())) return String(timeValue);
-
-    const year = d.getFullYear();
-    const month = d.getMonth() + 1;
-    const day = d.getDate();
-    const hours = d.getHours();
-    const minutes = String(d.getMinutes()).padStart(2, '0');
-    const seconds = String(d.getSeconds()).padStart(2, '0');
-
-    const ampm = hours < 12 ? '上午' : '下午';
-    let hour12 = hours % 12;
-    if (hour12 === 0) hour12 = 12;
-
-    return `${year}/${month}/${day} ${ampm} ${hour12}:${minutes}:${seconds}`;
-  } catch (e) {
-    return String(timeValue);
-  }
+  if (typeof timeValue === 'string' && (timeValue.includes('上午') || timeValue.includes('下午'))) return timeValue;
+  const d = new Date(timeValue);
+  if (isNaN(d.getTime())) return String(timeValue);
+  const hours = d.getHours();
+  const hour12 = hours % 12 || 12;
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  const seconds = String(d.getSeconds()).padStart(2, '0');
+  return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()} ${hours < 12 ? '上午' : '下午'} ${hour12}:${minutes}:${seconds}`;
 }
 
 // ==================== Start ====================
 init();
-
